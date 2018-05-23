@@ -3,6 +3,7 @@
 
 #include "Particle.h"
 #include "SpringForce.h"
+#include "GravityForce.h"
 #include "RodConstraint.h"
 #include "CircularWireConstraint.h"
 #include "imageio.h"
@@ -27,6 +28,8 @@ static int frame_number;
 
 // static Particle *pList;
 static std::vector<Particle *> pVector;
+static std::vector<Force *> fVector;
+static std::vector<Constraint*> cVector;
 
 static int win_id;
 static int win_x, win_y;
@@ -35,10 +38,6 @@ static int mouse_release[3];
 static int mouse_shiftclick[3];
 static int omx, omy, mx, my;
 static int hmx, hmy;
-
-static SpringForce *delete_this_dummy_spring = NULL;
-static RodConstraint *delete_this_dummy_rod = NULL;
-static CircularWireConstraint *delete_this_dummy_wire = NULL;
 
 /*
 ----------------------------------------------------------------------
@@ -49,21 +48,8 @@ free/clear/allocate simulation data
 static void free_data(void)
 {
 	pVector.clear();
-	if (delete_this_dummy_rod)
-	{
-		delete delete_this_dummy_rod;
-		delete_this_dummy_rod = NULL;
-	}
-	if (delete_this_dummy_spring)
-	{
-		delete delete_this_dummy_spring;
-		delete_this_dummy_spring = NULL;
-	}
-	if (delete_this_dummy_wire)
-	{
-		delete delete_this_dummy_wire;
-		delete_this_dummy_wire = NULL;
-	}
+	fVector.clear();
+	cVector.clear();
 }
 
 static void clear_data(void)
@@ -74,6 +60,21 @@ static void clear_data(void)
 	{
 		pVector[ii]->reset();
 	}
+}
+
+static void apply_forces()
+{
+	for (Force *f : fVector)
+	{
+		f->apply();
+	}
+}
+
+//finish the solver (slides) : Radu
+static void apply_constraints(float ks, float kd)
+{
+	int dimensions = 2;
+
 }
 
 static void init_system(void)
@@ -89,18 +90,13 @@ static void init_system(void)
 	pVector.push_back(new Particle(center + offset + offset, 3.0f));
 	pVector.push_back(new Particle(center + offset + offset + offset, 120.0f));
 
-	// You shoud replace these with a vector generalized forces and one of
-	// constraints...
-	delete_this_dummy_spring = new SpringForce(pVector, dist, 1.0, 1.0);
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_spring->apply();
-	delete_this_dummy_rod = new RodConstraint(pVector[1], pVector[2], dist);
-	delete_this_dummy_wire = new CircularWireConstraint(pVector[0], center, dist);
+	fVector.push_back(new SpringForce(pVector, 0, 1, dist, 1.0, 1.0));
+	fVector.push_back(new SpringForce(pVector, 1, 2, dist, 1.0, 1.0));
+	fVector.push_back(new SpringForce(pVector, 0, 2, dist, 1.0, 1.0));
+	fVector.push_back(new GravityForce(pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
+
+	cVector.push_back(new RodConstraint(pVector[1], pVector[2], dist));
+	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));
 }
 
 /*
@@ -159,18 +155,18 @@ static void draw_particles(void)
 
 static void draw_forces(void)
 {
-	// change this to iteration over full set
-	if (delete_this_dummy_spring)
-		delete_this_dummy_spring->draw();
+	for (Force *f : fVector)
+	{
+		f->draw();
+	}
 }
 
 static void draw_constraints(void)
 {
-	// change this to iteration over full set
-	if (delete_this_dummy_rod)
-		delete_this_dummy_rod->draw();
-	if (delete_this_dummy_wire)
-		delete_this_dummy_wire->draw();
+	for(Constraint* c: cVector)
+	{
+		c->draw();
+	}
 }
 
 /*
@@ -310,6 +306,7 @@ static void display_func(void)
 	draw_particles();
 
 	post_display();
+	// std::cout << pVector[0]->m_Position[0] << pVector[0]->m_Position[1] << "|";
 }
 
 /*

@@ -6,10 +6,7 @@
 class Force {
  public:
  
-  void draw();
-  void apply();
+  virtual void draw();
+  virtual void apply();
   std::vector<Particle*> particles;
-//   Particle * const m_p1;   
-//   Particle * const m_p2;   
-
 };

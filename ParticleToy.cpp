@@ -91,7 +91,7 @@ static void init_system(void)
 
 	// You shoud replace these with a vector generalized forces and one of
 	// constraints...
-	delete_this_dummy_spring = new SpringForce(pVector[0], pVector[1], dist, 1.0, 1.0);
+	delete_this_dummy_spring = new SpringForce(pVector, dist, 1.0, 1.0);
 	delete_this_dummy_spring->apply();
 	delete_this_dummy_spring->apply();
 	delete_this_dummy_spring->apply();

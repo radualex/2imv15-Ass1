@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Particle.h"
+#include "Force.h"
 
 class SpringForce: public Force {
  public:
-  SpringForce(std::vector<Particle*> particless, double dist, double ks, double kd);
+  SpringForce(std::vector<Particle*> p, double dist, double ks, double kd);
 
   void draw() override;
   void apply() override;

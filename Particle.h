@@ -2,6 +2,7 @@
 
 #include <gfx/vec2.h>
 
+
 class Particle
 {
 public:
@@ -11,6 +12,9 @@ public:
 
 	void reset();
 	void draw();
+	void updateVelocity(double dt);
+	void updatePosition(double dt);
+	void clearForce();
 
 	Vec2f m_ConstructPos;
 	Vec2f m_Position;

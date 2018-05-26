@@ -7,11 +7,17 @@
 #include "RodConstraint.h"
 #include "CircularWireConstraint.h"
 #include "imageio.h"
+#include "Constraint.h"
 
 #include <vector>
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glut.h>
+#include <algorithm>
+#include <Eigen/Dense>
+#include <Eigen/IterativeLinearSolvers>
+
+using namespace Eigen;
 
 /* macros */
 
@@ -29,7 +35,7 @@ static int frame_number;
 // static Particle *pList;
 static std::vector<Particle *> pVector;
 static std::vector<Force *> fVector;
-static std::vector<Constraint*> cVector;
+static std::vector<Constraint *> cVector;
 
 static int win_id;
 static int win_x, win_y;
@@ -70,11 +76,121 @@ static void apply_forces()
 	}
 }
 
-//finish the solver (slides) : Radu
+static int getPositionOfParticle(Particle *p)
+{
+	int pos = std::find(pVector.begin(), pVector.end(), p) - pVector.begin();
+	if (pos < pVector.size())
+	{
+		return pos;
+	}
+	return -1;
+}
+
+
 static void apply_constraints(float ks, float kd)
 {
-	int dimensions = 2;
+	const int dimensions = 2;
+	int vectorSize = pVector.size() * dimensions;
+	int constraintsSize = cVector.size();
 
+	VectorXf q = VectorXf::Zero(vectorSize);
+	VectorXf Q = VectorXf::Zero(vectorSize);
+	MatrixXf M = MatrixXf::Zero(vectorSize, vectorSize);
+	MatrixXf W = MatrixXf::Zero(vectorSize, vectorSize);
+	VectorXf C = VectorXf::Zero(constraintsSize);
+	VectorXf Cder = VectorXf::Zero(constraintsSize);
+	MatrixXf J = MatrixXf::Zero(constraintsSize, vectorSize);
+	MatrixXf Jt = MatrixXf::Zero(vectorSize, constraintsSize);
+	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
+
+	for (int i = 0; i < vectorSize; i += dimensions)
+	{
+		Particle *p = pVector[i / dimensions];
+		for (int d = 0; d < dimensions; d++)
+		{
+			M(i + d,i + d) = p->mass;
+			W(i + d,i + d) = 1 / p->mass;
+			Q[i + d] = p->m_Force[d];
+			q[i + d] = p->m_Velocity[d];
+		}
+	}
+
+	for (int i = 0; i < constraintsSize; i++)
+	{
+		Constraint *c = cVector[i];
+
+		C[i] = c->constraint();
+		Cder[i] = c->constraintDerivative();
+		std::vector<Vec2f> j = c->J();
+		std::vector<Vec2f> jd = c->JDerivative();
+
+		std::vector<Particle *> currentParticles = c->particles;
+		for (int k = 0; k < currentParticles.size(); k++)
+		{
+			int currentPos = getPositionOfParticle(currentParticles[k]);
+			if (currentPos != -1)
+			{
+				int pIndex = currentPos * dimensions;
+				for (int d = 0; d < dimensions; d++)
+				{
+					Jder(i,pIndex + d) = jd[k][d];
+					J(i,pIndex + d) = j[k][d];
+					Jt(pIndex + d,i) = j[k][d];
+				}
+			}
+			else
+			{
+				std::cout << "Error position -1";
+			}
+		}
+	}
+	MatrixXf JW = J * W;
+	MatrixXf JWJt = JW * Jt;
+	VectorXf Jderq = Jder * q;
+	VectorXf JWQ = JW * Q;
+	VectorXf KsC = ks * C;
+	VectorXf KdCd = kd * Cder;
+	VectorXf rhs = - Jderq - JWQ - KsC - KdCd;
+
+	ConjugateGradient<MatrixXf, Lower|Upper> cg;
+	cg.compute(JWJt);
+	VectorXf lambda = cg.solve(rhs);
+
+	VectorXf Qhat = J.transpose() * lambda;
+
+	for (int i = 0; i < pVector.size(); i++)
+	{
+		Particle *p = pVector[i];
+		int index = i * dimensions;
+		for (int d = 0; d < dimensions; d++)
+		{
+			p->m_Force[d] += Qhat[index + d];
+		}
+	}
+}
+
+static void calculateDerivative()
+{
+	for (Particle *p : pVector)
+	{
+		p->updateVelocity(dt);
+		p->updatePosition(dt);
+	}
+}
+
+static void clearForces()
+{
+	for (Particle *p : pVector)
+	{
+		p->clearForce();
+	}
+}
+static void derivative()
+{
+	clearForces();
+	apply_forces();
+	apply_constraints(100.0f, 10.0f);
+	calculateDerivative();
 }
 
 static void init_system(void)
@@ -97,8 +213,8 @@ static void init_system(void)
 
 	cVector.push_back(new RodConstraint(pVector[1], pVector[2], dist));
 	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));
-}
 
+}
 /*
 ----------------------------------------------------------------------
 OpenGL specific drawing routines
@@ -163,7 +279,7 @@ static void draw_forces(void)
 
 static void draw_constraints(void)
 {
-	for(Constraint* c: cVector)
+	for (Constraint *c : cVector)
 	{
 		c->draw();
 	}
@@ -286,7 +402,10 @@ static void reshape_func(int width, int height)
 static void idle_func(void)
 {
 	if (dsim)
+	{
 		simulation_step(pVector, dt);
+	}
+
 	else
 	{
 		get_from_UI();

@@ -86,7 +86,6 @@ static int getPositionOfParticle(Particle *p)
 	return -1;
 }
 
-
 static void apply_constraints(float ks, float kd)
 {
 	const int dimensions = 2;
@@ -108,8 +107,8 @@ static void apply_constraints(float ks, float kd)
 		Particle *p = pVector[i / dimensions];
 		for (int d = 0; d < dimensions; d++)
 		{
-			M(i + d,i + d) = p->mass;
-			W(i + d,i + d) = 1 / p->mass;
+			M(i + d, i + d) = p->mass;
+			W(i + d, i + d) = 1 / p->mass;
 			Q[i + d] = p->m_Force[d];
 			q[i + d] = p->m_Velocity[d];
 		}
@@ -133,9 +132,9 @@ static void apply_constraints(float ks, float kd)
 				int pIndex = currentPos * dimensions;
 				for (int d = 0; d < dimensions; d++)
 				{
-					Jder(i,pIndex + d) = jd[k][d];
-					J(i,pIndex + d) = j[k][d];
-					Jt(pIndex + d,i) = j[k][d];
+					Jder(i, pIndex + d) = jd[k][d];
+					J(i, pIndex + d) = j[k][d];
+					Jt(pIndex + d, i) = j[k][d];
 				}
 			}
 			else
@@ -150,9 +149,9 @@ static void apply_constraints(float ks, float kd)
 	VectorXf JWQ = JW * Q;
 	VectorXf KsC = ks * C;
 	VectorXf KdCd = kd * Cder;
-	VectorXf rhs = - Jderq - JWQ - KsC - KdCd;
+	VectorXf rhs = -Jderq - JWQ - KsC - KdCd;
 
-	ConjugateGradient<MatrixXf, Lower|Upper> cg;
+	ConjugateGradient<MatrixXf, Lower | Upper> cg;
 	cg.compute(JWJt);
 	VectorXf lambda = cg.solve(rhs);
 
@@ -213,7 +212,6 @@ static void init_system(void)
 
 	cVector.push_back(new RodConstraint(pVector[1], pVector[2], dist));
 	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));
-
 }
 /*
 ----------------------------------------------------------------------
@@ -291,6 +289,7 @@ relates mouse movements to particle toy construction
 ----------------------------------------------------------------------
 */
 
+Particle *springParticle;
 static void get_from_UI()
 {
 	int i, j;
@@ -312,6 +311,7 @@ static void get_from_UI()
 
 	if (mouse_down[2])
 	{
+		//std::cout <<"Mouse Right Down";
 	}
 
 	hi = (int)((hmx / (float)win_x) * N);
@@ -319,6 +319,7 @@ static void get_from_UI()
 
 	if (mouse_release[0])
 	{
+		//std::cout <<"Mouse release";
 	}
 
 	omx = mx;
@@ -367,6 +368,49 @@ static void key_func(unsigned char key, int x, int y)
 	}
 }
 
+static double *getObjectPositionFromScreenCoords(int mx, int my)
+{
+	GLdouble modelMatrix[16];
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+	GLdouble projectionMatrix[16];
+	glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix);
+	GLint viewMatrix[4];
+	glGetIntegerv(GL_VIEWPORT, viewMatrix);
+
+	double *position = new double[3];
+
+	gluUnProject(mx, my, 0, modelMatrix, projectionMatrix, viewMatrix,
+				 &position[0], &position[1], &position[2]);
+
+	return position;
+}
+
+static Particle *getClosestParticle(int x, int y)
+{
+	GLdouble modelMatrix[16];
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+	GLdouble projectionMatrix[16];
+	glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix);
+	GLint viewMatrix[4];
+	glGetIntegerv(GL_VIEWPORT, viewMatrix);
+
+	double closestDistance = 10000000;
+	Particle *closestParticle;
+	for (int i = 0; i < pVector.size(); i++)
+	{
+		Vec2f position = pVector[i]->m_Position;
+		double screenCoordinates[3];
+		gluProject(position[0], position[1], 0, modelMatrix, projectionMatrix, viewMatrix,
+				   &screenCoordinates[0], &screenCoordinates[1], &screenCoordinates[2]);
+		double distance = abs(x - screenCoordinates[0]) + abs(y - (win_y - screenCoordinates[1]));
+		if (distance < closestDistance)
+		{
+			closestDistance = distance;
+			closestParticle = pVector[i];
+		}
+	}
+	return closestParticle;
+}
 static void mouse_func(int button, int state, int x, int y)
 {
 	omx = mx = x;
@@ -382,12 +426,38 @@ static void mouse_func(int button, int state, int x, int y)
 	if (mouse_down[button])
 		mouse_shiftclick[button] = glutGetModifiers() == GLUT_ACTIVE_SHIFT;
 	mouse_down[button] = state == GLUT_DOWN;
+
+	if (state == GLUT_DOWN)
+	{
+		double *position = getObjectPositionFromScreenCoords(mx, my);
+		Particle *closestParticle = getClosestParticle(mx, my);
+
+		const Vec2f mousePos(position[0], -position[1]);
+
+		springParticle = new Particle(mousePos, 0.0f);
+		pVector.push_back(springParticle);
+
+		const int positionClosesetPart = getPositionOfParticle(closestParticle);
+		const int positionStringParticle = getPositionOfParticle(springParticle);
+
+		fVector.push_back(new SpringForce(pVector, positionClosesetPart, positionStringParticle, 0.2, 1.0, 1.0));
+	}
+	else if (state == GLUT_UP)
+	{
+		fVector.pop_back();
+		pVector.pop_back();
+	}
 }
 
 static void motion_func(int x, int y)
 {
 	mx = x;
 	my = y;
+
+	double *position = getObjectPositionFromScreenCoords(mx, my);
+	const Vec2f mousePos(position[0], -position[1]);
+	springParticle
+		->m_Position = mousePos;
 }
 
 static void reshape_func(int width, int height)

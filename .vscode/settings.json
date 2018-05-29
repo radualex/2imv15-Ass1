@@ -32,6 +32,17 @@
         "tuple": "cpp",
         "typeinfo": "cpp",
         "deque": "cpp",
-        "numeric": "cpp"
-    }
+        "numeric": "cpp",
+        "functional": "cpp",
+        "sparse": "cpp",
+        "complex": "cpp",
+        "cstddef": "cpp",
+        "cstring": "cpp",
+        "list": "cpp",
+        "iterativelinearsolvers": "cpp",
+        "algorithm": "cpp",
+        "dense": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Enabled",
+    "C_Cpp.intelliSenseEngineFallback": "Disabled"
 }

@@ -22,7 +22,7 @@ using namespace Eigen;
 /* macros */
 
 /* external definitions (from solver) */
-extern void simulation_step(std::vector<Particle *> pVector, float dt);
+extern void simulation_step(std::vector<Particle *> pVector, float dt, int solver);
 
 /* global variables */
 
@@ -68,14 +68,6 @@ static void clear_data(void)
 	}
 }
 
-static void apply_forces()
-{
-	for (Force *f : fVector)
-	{
-		f->apply();
-	}
-}
-
 static int getPositionOfParticle(Particle *p)
 {
 	int pos = std::find(pVector.begin(), pVector.end(), p) - pVector.begin();
@@ -85,7 +77,6 @@ static int getPositionOfParticle(Particle *p)
 	}
 	return -1;
 }
-
 
 static void apply_constraints(float ks, float kd)
 {
@@ -125,7 +116,7 @@ static void apply_constraints(float ks, float kd)
 		std::vector<Vec2f> jd = c->JDerivative();
 
 		std::vector<Particle *> currentParticles = c->particles;
-		for (int k = 0; k < currentParticles.size(); k++)
+		for (int k = 0; k <= currentParticles.size(); k++)
 		{
 			int currentPos = getPositionOfParticle(currentParticles[k]);
 			if (currentPos != -1)
@@ -178,6 +169,14 @@ static void calculateDerivative()
 	}
 }
 
+static void apply_forces()
+{
+	for (Force *f : fVector)
+	{
+		f->apply();
+	}
+}
+
 static void clearForces()
 {
 	for (Particle *p : pVector)
@@ -185,6 +184,7 @@ static void clearForces()
 		p->clearForce();
 	}
 }
+
 static void derivative()
 {
 	clearForces();
@@ -361,6 +361,26 @@ static void key_func(unsigned char key, int x, int y)
 		exit(0);
 		break;
 
+	case '1':
+		printf("Using Explicit Euler\n");
+		sys->solver = new Euler(Euler::EXPLICIT);
+		break;
+	case '2':
+		printf("Using Semi Explicit Euler\n");
+		sys->solver = new Euler(Euler::SEMI);
+		break;
+	case '3':
+		printf("Using Implicit Euler\n");
+		sys->solver = new Euler(Euler::IMPLICIT);
+		break;
+	case '4':
+		printf("Using Midpoint\n");
+		sys->solver = new Midpoint();
+		break;
+	case '5':
+		printf("Using Runge-Kutta\n");
+		sys->solver = new RungeKutta();
+		break;
 	case ' ':
 		dsim = !dsim;
 		break;
@@ -403,7 +423,8 @@ static void idle_func(void)
 {
 	if (dsim)
 	{
-		simulation_step(pVector, dt);
+		// change the number
+		simulation_step(pVector, dt, 1);
 	}
 
 	else

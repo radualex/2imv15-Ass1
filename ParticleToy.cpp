@@ -362,7 +362,7 @@ static void key_func(unsigned char key, int x, int y)
 		free_data();
 		exit(0);
 		break;
-
+	/*
 	case '1':
 		printf("Using Explicit Euler\n");
 		sys->solver = new Euler(Euler::EXPLICIT);
@@ -386,6 +386,8 @@ static void key_func(unsigned char key, int x, int y)
 	case ' ':
 		dsim = !dsim;
 		break;
+	
+	*/
 	}
 }
 

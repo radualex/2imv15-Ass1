@@ -12,34 +12,9 @@
 using namespace Eigen;
 using namespace std;
 
- enum TYPE {
-        EXPLICIT,
-        IMPLICIT,
-    };
-
-TYPE type;
-
-void simulation_step(System *system, float dt, int solver)
-{
-    if(solver == 1) applyEuler(system,dt);
-    else if(solver == 2) applyMidpoint(system, dt);
-    else if(solver == 3) applyRungeKutta(system, dt);
-
-    /*
-	int ii, size = system->particles.size();
-
-	for (ii = 0; ii < size; ii++)
-	{
-		system->particles[ii]->m_Position += dt * pVector[ii]->m_Velocity;
-		system->particles[ii]->m_Velocity = DAMP * pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
-	}
-    */
-}
-
-
 void applyEuler(System *system, float h) {
-    if (type == IMPLICIT) {
-        implicit(system, h);
+    if (false) {
+        //implicit(system, h);
     } else {
         VectorXf oldState = system->getState();
         VectorXf deriv = system->derivEval();
@@ -52,6 +27,7 @@ void applyEuler(System *system, float h) {
     }
 }
 
+/*
 void implicit(System *sys, float h) {
     // Get old state
     VectorXf oldState = sys->getState();
@@ -143,6 +119,7 @@ void implicit(System *sys, float h) {
     }
     sys->setState(newState);
 }
+*/
 
 void applyMidpoint(System *sys, float h) {
 
@@ -188,4 +165,21 @@ void applyRungeKutta(System *sys, float h) {
     }
 
     sys->setState(newState, oldTime + h);
+}
+
+void simulation_step(System *system, float dt, int solver)
+{
+    if(solver == 1) applyEuler(system,dt);
+    else if(solver == 2) applyMidpoint(system, dt);
+    else if(solver == 3) applyRungeKutta(system, dt);
+
+    /*
+	int ii, size = system->particles.size();
+
+	for (ii = 0; ii < size; ii++)
+	{
+		system->particles[ii]->m_Position += dt * pVector[ii]->m_Velocity;
+		system->particles[ii]->m_Velocity = DAMP * pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
+	}
+    */
 }

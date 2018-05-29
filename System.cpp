@@ -141,7 +141,7 @@ void System::setState(VectorXf src, float t) {
 
 void System::computeForces() {
     for (Force *f : forces) {
-        f->apply(springsCanBreak);
+        f->apply();
     }
 }
 

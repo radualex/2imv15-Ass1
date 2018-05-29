@@ -1,3 +1,4 @@
+/*
 #include "SpringForce.h"
 #include "AngularSpringForce.h"
 
@@ -29,7 +30,7 @@ void AngularSpringForce::apply() {
     // Compute spring force
     double b = norm(l1);
     double c = norm(l2);
-    Vec3f result = -(ks * (norm(l) - sqrt(b * b + c * c - 2 * b * c * cos(dist))) + kd * ((l * ld) / norm(l))) * (l / norm(l));
+    Vec2f result = -(ks * (norm(l) - sqrt(b * b + c * c - 2 * b * c * cos(dist))) + kd * ((l * ld) / norm(l))) * (l / norm(l));
 
     particles[0]->m_Force += result;
     particles[2]->m_Force -= result;
@@ -53,3 +54,4 @@ map<int, map<int, float>> AngularSpringForce::jx() {
 MatrixXf AngularSpringForce::jv() {
     return MatrixXf();
 }
+*/

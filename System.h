@@ -1,7 +1,7 @@
 #ifndef PARTICLETOY_SYSTEM_H
 #define PARTICLETOY_SYSTEM_H
 
-#include "Eigen/Dense"
+#include "include/Eigen/Dense"
 
 #include "Particle.h"
 #include "Force.h"
@@ -13,46 +13,53 @@ using namespace std;
 class Solver;
 class System {
 private:
-    void drawParticles(bool drawVelocity, bool drawForce);
-    void drawForces();
-    void drawConstraints();
 
     void computeForces();
     void clearForces();
+    void apply_constraints(float ks, float kd);
+    void calculateDerivative();
+    void apply_forces();
 
     float time;
 public:
-    System(Solver* solver);
+    System();
+    //System(Solver* solver);
 
-    std::vector<Particle*> particles;
-    std::vector<Force*> forces;
-    std::vector<Constraint*> constraints;
-
-    bool wallExists;
-    bool springsCanBreak = false;
-    float dt;
-    //SystemBuilder::AvailableSystems type;
-    Solver* solver;
+    std::vector<Particle*> pVector;
+    std::vector<Force*> fVector;
+    std::vector<Constraint*> cVector;
 
     void addParticle(Particle* p);
     void addForce(Force* f);
     void addConstraint(Constraint* c);
-    VectorXf checkWallCollision(VectorXf oldState, VectorXf newState);
+    void free_data();
+    void clear_data();
+
+
 
     // ODE interface
+    float getTime();
+    unsigned long getDim();
     VectorXf derivEval();
     VectorXf computeDerivative();
     VectorXf getState();
-    float getTime();
     void setState(VectorXf src);
     void setState(VectorXf newState, float time);
-    unsigned long getDim();
+    int getPositionOfParticle(Particle *p);
 
-    void step(bool adaptive);
-    void free();
-    void reset();
-    void draw(bool drawVelocity, bool drawForces, bool drawConstraints);
-    Particle* indexParticle(int x, int y, int xdim, int ydim);
+
+    bool wallExists;
+
+
+    //float dt;
+    //SystemBuilder::AvailableSystems type;
+    //Solver* solver;
+
+    VectorXf checkWallCollision(VectorXf oldState, VectorXf newState);
+
+
+    //void step(bool adaptive);
+    //Particle* indexParticle(int x, int y, int xdim, int ydim);
     //Vec3f getNormalForParticleAtIndex(int x, int y, int xdim, int ydim);
 };
 

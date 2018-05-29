@@ -8,6 +8,7 @@
 #include "CircularWireConstraint.h"
 #include "imageio.h"
 #include "Constraint.h"
+#include "System.h"
 
 #include <vector>
 #include <stdlib.h>
@@ -21,21 +22,19 @@ using namespace Eigen;
 
 /* macros */
 
+System* sys = new System();
+
 /* external definitions (from solver) */
-extern void simulation_step(std::vector<Particle *> pVector, float dt, int solver);
+extern void simulation_step(System* sys, float dt, int solver);
 
 /* global variables */
+
 
 static int N;
 static float dt, d;
 static int dsim;
 static int dump_frames;
 static int frame_number;
-
-// static Particle *pList;
-static std::vector<Particle *> pVector;
-static std::vector<Force *> fVector;
-static std::vector<Constraint *> cVector;
 
 static int win_id;
 static int win_x, win_y;
@@ -44,154 +43,6 @@ static int mouse_release[3];
 static int mouse_shiftclick[3];
 static int omx, omy, mx, my;
 static int hmx, hmy;
-
-/*
-----------------------------------------------------------------------
-free/clear/allocate simulation data
-----------------------------------------------------------------------
-*/
-
-static void free_data(void)
-{
-	pVector.clear();
-	fVector.clear();
-	cVector.clear();
-}
-
-static void clear_data(void)
-{
-	int ii, size = pVector.size();
-
-	for (ii = 0; ii < size; ii++)
-	{
-		pVector[ii]->reset();
-	}
-}
-
-static int getPositionOfParticle(Particle *p)
-{
-	int pos = std::find(pVector.begin(), pVector.end(), p) - pVector.begin();
-	if (pos < pVector.size())
-	{
-		return pos;
-	}
-	return -1;
-}
-
-static void apply_constraints(float ks, float kd)
-{
-	const int dimensions = 2;
-	int vectorSize = pVector.size() * dimensions;
-	int constraintsSize = cVector.size();
-
-	VectorXf q = VectorXf::Zero(vectorSize);
-	VectorXf Q = VectorXf::Zero(vectorSize);
-	MatrixXf M = MatrixXf::Zero(vectorSize, vectorSize);
-	MatrixXf W = MatrixXf::Zero(vectorSize, vectorSize);
-	VectorXf C = VectorXf::Zero(constraintsSize);
-	VectorXf Cder = VectorXf::Zero(constraintsSize);
-	MatrixXf J = MatrixXf::Zero(constraintsSize, vectorSize);
-	MatrixXf Jt = MatrixXf::Zero(vectorSize, constraintsSize);
-	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
-
-	for (int i = 0; i < vectorSize; i += dimensions)
-	{
-		Particle *p = pVector[i / dimensions];
-		for (int d = 0; d < dimensions; d++)
-		{
-			M(i + d, i + d) = p->mass;
-			W(i + d, i + d) = 1 / p->mass;
-			Q[i + d] = p->m_Force[d];
-			q[i + d] = p->m_Velocity[d];
-		}
-	}
-
-	for (int i = 0; i < constraintsSize; i++)
-	{
-		Constraint *c = cVector[i];
-
-		C[i] = c->constraint();
-		Cder[i] = c->constraintDerivative();
-		std::vector<Vec2f> j = c->J();
-		std::vector<Vec2f> jd = c->JDerivative();
-
-		std::vector<Particle *> currentParticles = c->particles;
-		for (int k = 0; k <= currentParticles.size(); k++)
-		{
-			int currentPos = getPositionOfParticle(currentParticles[k]);
-			if (currentPos != -1)
-			{
-				int pIndex = currentPos * dimensions;
-				for (int d = 0; d < dimensions; d++)
-				{
-					Jder(i, pIndex + d) = jd[k][d];
-					J(i, pIndex + d) = j[k][d];
-					Jt(pIndex + d, i) = j[k][d];
-				}
-			}
-			else
-			{
-				std::cout << "Error position -1";
-			}
-		}
-	}
-	MatrixXf JW = J * W;
-	MatrixXf JWJt = JW * Jt;
-	VectorXf Jderq = Jder * q;
-	VectorXf JWQ = JW * Q;
-	VectorXf KsC = ks * C;
-	VectorXf KdCd = kd * Cder;
-	VectorXf rhs = -Jderq - JWQ - KsC - KdCd;
-
-	ConjugateGradient<MatrixXf, Lower | Upper> cg;
-	cg.compute(JWJt);
-	VectorXf lambda = cg.solve(rhs);
-
-	VectorXf Qhat = J.transpose() * lambda;
-
-	for (int i = 0; i < pVector.size(); i++)
-	{
-		Particle *p = pVector[i];
-		int index = i * dimensions;
-		for (int d = 0; d < dimensions; d++)
-		{
-			p->m_Force[d] += Qhat[index + d];
-		}
-	}
-}
-
-static void calculateDerivative()
-{
-	for (Particle *p : pVector)
-	{
-		p->updateVelocity(dt);
-		p->updatePosition(dt);
-	}
-}
-
-static void apply_forces()
-{
-	for (Force *f : fVector)
-	{
-		f->apply();
-	}
-}
-
-static void clearForces()
-{
-	for (Particle *p : pVector)
-	{
-		p->clearForce();
-	}
-}
-
-static void derivative()
-{
-	clearForces();
-	apply_forces();
-	apply_constraints(100.0f, 10.0f);
-	calculateDerivative();
-}
 
 static void init_system(void)
 {
@@ -202,18 +53,20 @@ static void init_system(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	pVector.push_back(new Particle(center + offset, 10.0f));
-	pVector.push_back(new Particle(center + offset + offset, 3.0f));
-	pVector.push_back(new Particle(center + offset + offset + offset, 120.0f));
+	sys->addParticle(new Particle(center + offset, 10.0f));
+	sys->addParticle(new Particle(center + offset + offset, 3.0f));
+	sys->addParticle(new Particle(center + offset + offset + offset, 120.0f));
 
-	fVector.push_back(new SpringForce(pVector, 0, 1, dist, 1.0, 1.0));
-	fVector.push_back(new SpringForce(pVector, 1, 2, dist, 1.0, 1.0));
-	fVector.push_back(new SpringForce(pVector, 0, 2, dist, 1.0, 1.0));
-	fVector.push_back(new GravityForce(pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
+	sys->addForce(new SpringForce(sys->pVector, 0, 1, dist, 1.0, 1.0));
+	sys->addForce(new SpringForce(sys->pVector, 1, 2, dist, 1.0, 1.0));
+	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 1.0, 1.0));
+	sys->addForce(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
-	cVector.push_back(new RodConstraint(pVector[1], pVector[2], dist));
-	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));
+	sys->addConstraint(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
+	sys->addConstraint(new CircularWireConstraint(sys->pVector[0], center, dist));
 }
+
+
 /*
 ----------------------------------------------------------------------
 OpenGL specific drawing routines
@@ -260,17 +113,17 @@ static void post_display(void)
 
 static void draw_particles(void)
 {
-	int size = pVector.size();
+	int size = sys->pVector.size();
 
 	for (int ii = 0; ii < size; ii++)
 	{
-		pVector[ii]->draw();
+		sys->pVector[ii]->draw();
 	}
 }
 
 static void draw_forces(void)
 {
-	for (Force *f : fVector)
+	for (Force *f : sys->fVector)
 	{
 		f->draw();
 	}
@@ -278,7 +131,7 @@ static void draw_forces(void)
 
 static void draw_constraints(void)
 {
-	for (Constraint *c : cVector)
+	for (Constraint *c : sys->cVector)
 	{
 		c->draw();
 	}
@@ -329,11 +182,11 @@ static void get_from_UI()
 
 static void remap_GUI()
 {
-	int ii, size = pVector.size();
+	int ii, size = sys->pVector.size();
 	for (ii = 0; ii < size; ii++)
 	{
-		pVector[ii]->m_Position[0] = pVector[ii]->m_ConstructPos[0];
-		pVector[ii]->m_Position[1] = pVector[ii]->m_ConstructPos[1];
+		sys->pVector[ii]->m_Position[0] = sys->pVector[ii]->m_ConstructPos[0];
+		sys->pVector[ii]->m_Position[1] = sys->pVector[ii]->m_ConstructPos[1];
 	}
 }
 
@@ -349,7 +202,7 @@ static void key_func(unsigned char key, int x, int y)
 	{
 	case 'c':
 	case 'C':
-		clear_data();
+		sys->clear_data();
 		break;
 
 	case 'd':
@@ -359,7 +212,7 @@ static void key_func(unsigned char key, int x, int y)
 
 	case 'q':
 	case 'Q':
-		free_data();
+		sys->free_data();
 		exit(0);
 		break;
 	case ' ':
@@ -420,9 +273,9 @@ static Particle *getClosestParticle(int x, int y)
 
 	double closestDistance = 10000000;
 	Particle *closestParticle;
-	for (int i = 0; i < pVector.size(); i++)
+	for (int i = 0; i < sys->pVector.size(); i++)
 	{
-		Vec2f position = pVector[i]->m_Position;
+		Vec2f position = sys->pVector[i]->m_Position;
 		double screenCoordinates[3];
 		gluProject(position[0], position[1], 0, modelMatrix, projectionMatrix, viewMatrix,
 				   &screenCoordinates[0], &screenCoordinates[1], &screenCoordinates[2]);
@@ -430,11 +283,12 @@ static Particle *getClosestParticle(int x, int y)
 		if (distance < closestDistance)
 		{
 			closestDistance = distance;
-			closestParticle = pVector[i];
+			closestParticle = sys->pVector[i];
 		}
 	}
 	return closestParticle;
 }
+
 static void mouse_func(int button, int state, int x, int y)
 {
 	omx = mx = x;
@@ -459,17 +313,17 @@ static void mouse_func(int button, int state, int x, int y)
 		const Vec2f mousePos(position[0], -position[1]);
 
 		springParticle = new Particle(mousePos, 0.0f);
-		pVector.push_back(springParticle);
+		sys->pVector.push_back(springParticle);
 
-		const int positionClosesetPart = getPositionOfParticle(closestParticle);
-		const int positionStringParticle = getPositionOfParticle(springParticle);
+		const int positionClosesetPart = sys->getPositionOfParticle(closestParticle);
+		const int positionStringParticle = sys->getPositionOfParticle(springParticle);
 
-		fVector.push_back(new SpringForce(pVector, positionClosesetPart, positionStringParticle, 0.2, 1.0, 1.0));
+		sys->fVector.push_back(new SpringForce(sys->pVector, positionClosesetPart, positionStringParticle, 0.2, 1.0, 1.0));
 	}
 	else if (state == GLUT_UP)
 	{
-		fVector.pop_back();
-		pVector.pop_back();
+		sys->fVector.pop_back();
+		sys->pVector.pop_back();
 	}
 }
 
@@ -480,8 +334,7 @@ static void motion_func(int x, int y)
 
 	double *position = getObjectPositionFromScreenCoords(mx, my);
 	const Vec2f mousePos(position[0], -position[1]);
-	springParticle
-		->m_Position = mousePos;
+	springParticle->m_Position = mousePos;
 }
 
 static void reshape_func(int width, int height)
@@ -498,7 +351,7 @@ static void idle_func(void)
 	if (dsim)
 	{
 		// change the number
-		simulation_step(pVector, dt, 1);
+		simulation_step(sys, dt, 1);
 	}
 
 	else

@@ -8,6 +8,7 @@
 #include "CircularWireConstraint.h"
 #include "imageio.h"
 #include "Constraint.h"
+#include "Cloth.h"
 
 #include <vector>
 #include <stdlib.h>
@@ -195,7 +196,8 @@ static void derivative()
 
 static void init_system(void)
 {
-	const double dist = 0.2;
+	auto cloth = new Cloth(10,10, pVector, fVector, cVector);
+	/*const double dist = 0.2;
 	const Vec2f center(0.0, 0.0);
 	const Vec2f offset(dist, 0.0);
 
@@ -212,7 +214,7 @@ static void init_system(void)
 	fVector.push_back(new GravityForce(pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
 	cVector.push_back(new RodConstraint(pVector[1], pVector[2], dist));
-	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));
+	cVector.push_back(new CircularWireConstraint(pVector[0], center, dist));*/
 
 }
 /*

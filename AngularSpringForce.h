@@ -1,3 +1,4 @@
+/*
 #include "../Particle.h"
 #include "Force.h"
 #include "SpringForce.h"
@@ -19,3 +20,4 @@ private:
     float const dist;     // rest length
     float const ks, kd; // spring strength constants
 };
+*/

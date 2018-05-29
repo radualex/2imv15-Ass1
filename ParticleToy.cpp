@@ -362,6 +362,10 @@ static void key_func(unsigned char key, int x, int y)
 		free_data();
 		exit(0);
 		break;
+	case ' ':
+		dsim = !dsim;
+		break;
+	
 	/*
 	case '1':
 		printf("Using Explicit Euler\n");
@@ -383,10 +387,7 @@ static void key_func(unsigned char key, int x, int y)
 		printf("Using Runge-Kutta\n");
 		sys->solver = new RungeKutta();
 		break;
-	case ' ':
-		dsim = !dsim;
-		break;
-	
+		
 	*/
 	}
 }

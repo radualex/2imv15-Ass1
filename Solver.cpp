@@ -174,12 +174,12 @@ void simulation_step(std::vector<Particle *> pVector, float dt, int solver)
     // else if(solver == 3) applyRungeKutta(system, dt);
 
     // /*
-	// int ii, size = system->particles.size();
+	 int ii, size = pVector.size();
 
-	// for (ii = 0; ii < size; ii++)
-	// {
-	// 	system->particles[ii]->m_Position += dt * pVector[ii]->m_Velocity;
-	// 	system->particles[ii]->m_Velocity = DAMP * pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
-	// }
+	 for (ii = 0; ii < size; ii++)
+	 {
+	 	pVector[ii]->m_Position += dt * pVector[ii]->m_Velocity;
+	 	pVector[ii]->m_Velocity = DAMP * pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
+	 }
     // */
 }

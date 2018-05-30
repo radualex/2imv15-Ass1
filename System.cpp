@@ -1,12 +1,8 @@
 #include "System.h"
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
-//#include "solvers/Solver.h"
-//#include "solvers/ConstraintSolver.h"
 
 System::System() {}
-
-//System::System(Solver *solver) : solver(solver), time(0.0f), wallExists(false), dt(0.005) {}
 
 /*
 ----------------------------------------------------------------------
@@ -158,25 +154,6 @@ void System::addConstraint(Constraint *c)
     cVector.push_back(c);
 }
 
-/*
-void System::calculateDerivative()
-{
-	for (Particle *p : pVector)
-	{
-		p->updateVelocity(dt);
-		p->updatePosition(dt);
-	}
-}
-
-void System::derivative()
-{
-	clearForces();
-	apply_forces();
-	apply_constraints(100.0f, 10.0f);
-	calculateDerivative();
-}
-*/
-
 VectorXf System::derivEval() {
     clearForces();
     apply_forces();
@@ -218,96 +195,11 @@ VectorXf System::getState() {
     return r;
 }
 
-float System::getTime() {
-    return time;
-}
-
-void System::setState(VectorXf src) {
-    this->setState(src, this->getTime());
-}
-
-void System::setState(VectorXf src, float t) {
+void System::setState(VectorXf newState) {
     for (int i = 0; i < pVector.size(); i++) {
-        pVector[i]->m_Position[0] = src[i * 4 + 0];
-        pVector[i]->m_Position[1] = src[i * 4 + 1];
-        pVector[i]->m_Velocity[0] = src[i * 4 + 2];
-        pVector[i]->m_Velocity[1] = src[i * 4 + 3];
-    }
-    this->time = t;
-}
-
-
-/*
-void System::step(bool adaptive) {
-    if (adaptive) {
-        VectorXf before = this->getState();
-        solver->simulateStep(this, dt);
-        VectorXf xa = this->getState();
-        this->setState(before);
-
-        solver->simulateStep(this, dt / 2);
-        solver->simulateStep(this, dt / 2);
-        VectorXf xb = this->getState();
-
-        float err = (xa - xb).norm();
-        if (err > 0)
-            dt *= pow(0.001f / err, .5f);
-
-        this->setState(before);
-    }
-
-    solver->simulateStep(this, dt);
-}
-*/
-
-
-VectorXf System::checkWallCollision(VectorXf oldState, VectorXf newState) {
-    //collision from side
-    for (int i = 0; i < pVector.size(); i++) {
-        if (newState[i * 6] < -0.55f) {
-            newState[i * 6] = -0.55f;
-        }
-    }
-    //Check collision with floor
-    for (int i = 0; i < pVector.size(); i++) {
-        if(newState[i * 6 + 1]<-2.5f){
-            newState[i * 6 + 1]=-2.5f;
-        }
-    }
-
-    return newState;
-}
-
-/*
-
-
-Particle* System::indexParticle(int x, int y, int xdim, int ydim) {
-    if (x < 0) {
-        return pVector[0 + xdim * y];
-    } else if (x >= xdim) {
-        return pVector[(xdim-1)+xdim * y];
-    } else if (y < 0) {
-        return pVector[x + xdim * 0];
-    } else if (y >= ydim) {
-        return pVector[x + xdim * (ydim - 1)];
-    } else {
-        return pVector[x + xdim * y];
+        pVector[i]->m_Position[0] = newState[i * 4 + 0];
+        pVector[i]->m_Position[1] = newState[i * 4 + 1];
+        pVector[i]->m_Velocity[0] = newState[i * 4 + 2];
+        pVector[i]->m_Velocity[1] = newState[i * 4 + 3];
     }
 }
-
-Vec3f System::getNormalForParticleAtIndex(int x, int y, int xdim, int ydim) {
-    Vec3f sumNormal = {0.f, 0.f, 0.f};
-    Vec3f north = indexParticle(x, y-1, xdim, ydim)->position;
-    Vec3f east = indexParticle(x+1, y, xdim, ydim)->position;
-    Vec3f south = indexParticle(x, y+1, xdim, ydim)->position;
-    Vec3f west = indexParticle(x-1, y, xdim, ydim)->position;
-
-    sumNormal += cross(north, west);
-    sumNormal += cross(west, south);
-    sumNormal += cross(south, east);
-    sumNormal += cross(east, north);
-
-    unitize(sumNormal);
-    return sumNormal;
-}
-*/

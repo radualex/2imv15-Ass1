@@ -1,5 +1,4 @@
-#ifndef PARTICLETOY_SYSTEM_H
-#define PARTICLETOY_SYSTEM_H
+#pragma once
 
 #include "include/Eigen/Dense"
 
@@ -19,7 +18,6 @@ private:
     void apply_constraints(float ks, float kd);
     void calculateDerivative();
     void apply_forces();
-    float time;
     
 public:
     System();
@@ -31,37 +29,16 @@ public:
 
     void addParticle(Particle* p);
     void addForce(Force* f);
+    int getPositionOfParticle(Particle *p);
     void addConstraint(Constraint* c);
     void free_data();
     void clear_data();
     void derivative();
 
-
     // ODE interface
-    float getTime();
     unsigned long getDim();
     VectorXf derivEval();
     VectorXf computeDerivative();
     VectorXf getState();
-    void setState(VectorXf src);
-    void setState(VectorXf newState, float time);
-    int getPositionOfParticle(Particle *p);
-
-
-    bool wallExists;
-
-
-    //float dt;
-    //SystemBuilder::AvailableSystems type;
-    //Solver* solver;
-
-    VectorXf checkWallCollision(VectorXf oldState, VectorXf newState);
-
-
-    //void step(bool adaptive);
-    //Particle* indexParticle(int x, int y, int xdim, int ydim);
-    //Vec3f getNormalForParticleAtIndex(int x, int y, int xdim, int ydim);
+    void setState(VectorXf newState);
 };
-
-
-#endif //PARTICLETOY_SYSTEM_H

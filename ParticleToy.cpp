@@ -212,13 +212,13 @@ static void init_basic(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	sys->pVector.push_back(new Particle(center + offset, 10.0f));
-	sys->pVector.push_back(new Particle(center + offset + offset, 3.0f));
-	sys->pVector.push_back(new Particle(center + offset + offset + offset, 3.0f));
+	sys->pVector.push_back(new Particle(center + offset, 2.0f));
+	sys->pVector.push_back(new Particle(center + offset + offset, 2.0f));
+	sys->pVector.push_back(new Particle(center + offset + offset + offset, 2.0f));
 
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 10.0, 100.0));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 10.0, 100.0));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 10.0, 100.0));
+	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.50));
+	sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.50));
+	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.50));
 	sys->fVector.push_back(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
 	sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
@@ -644,7 +644,7 @@ int main(int argc, char **argv)
 	if (argc == 1)
 	{
 		N = 64;
-		dt = 0.0001f;
+		dt = 0.001f;
 		d = 5.f;
 		fprintf(stderr, "Using defaults : N=%d dt=%g d=%g\n",
 				N, dt, d);
@@ -660,6 +660,12 @@ int main(int argc, char **argv)
 	printf("\t Toggle construction/simulation display with the spacebar key\n");
 	printf("\t Dump frames by pressing the 'd' key\n");
 	printf("\t Quit by pressing the 'q' key\n");
+	printf("\t Press 'a' to show Default example\n");
+	printf("\t Press 's' to show Cloth example\n");
+	printf("\t Press 'w' to show Angular springs example\n");
+	printf("\t Press '1' to apply Explicit Euler\n");
+	printf("\t Press '2' to apply Mid-point\n");
+	printf("\t Press '3' to apply Runge-kutta\n");
 
 	dsim = 0;
 	dump_frames = 0;

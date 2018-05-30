@@ -33,7 +33,6 @@ void AngularSpringForce::draw() {
     glColor3f(1.0f, 1.0f, 0.0f);
     glVertex2f(particles[m_p1]->m_Position[0], particles[m_p1]->m_Position[1]);
     glVertex2f(particles[m_p2]->m_Position[0], particles[m_p2]->m_Position[1]);
-    glVertex2f(particles[m_p1]->m_Position[0], particles[m_p1]->m_Position[1]);
     glVertex2f(particles[m_p3]->m_Position[0], particles[m_p3]->m_Position[1]);
     glEnd();
 }

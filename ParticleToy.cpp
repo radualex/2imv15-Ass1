@@ -231,16 +231,22 @@ static void init_angular(void)
 	clear_data();
 	free_data();
 	double dist = -0.2;
-	const Vec2f center(0.0, 1.0);
+	const Vec2f start(0.0, 0.6);
 	const Vec2f offset(0.0, dist);
-	for(int i = 0; i < 3 ; i++){
-		sys->pVector.push_back(new Particle(center + i*offset, 10.0f));
+	const Vec2f offset2(0.1,0.0);
+	for(int i = 0; i < 8 ; i++){
+		int k = 1;
+		if(i%2 == 0)
+		k = 1;
+		else k = -1;
+		sys->pVector.push_back(new Particle(start + i*offset + k*offset2, 10.0f));
 	}
-	for(int i = 0; i<1; i++){
-		sys->fVector.push_back(new AngularSpringForce(sys->pVector, i, i+1, i+2, dist, 1.0, 1.0));
+	for(int i = 0; i<6; i++){
+		sys->fVector.push_back(new AngularSpringForce(sys->pVector, i, i+1, i+2, dist, 120.0, 100.0));
 	}
 
-	//sys->fVector.push_back(new GravityForce(sys->pVector, Vec2f(0, -9.81f)));
+
+	//sys->fVector.push_back(new GravityForce({sys->pVector[7]}, Vec2f(0, -9.81f)));
 
 	//fVector.push_back(new AngularSpringForce(pVector, 0, 1, 2, dist, 1.0, 1.0));
 

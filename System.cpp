@@ -1,68 +1,243 @@
-
 #include "System.h"
+#include <Eigen/Dense>
+#include <Eigen/IterativeLinearSolvers>
 //#include "solvers/Solver.h"
 //#include "solvers/ConstraintSolver.h"
 
-System::System(Solver *solver) : solver(solver), time(0.0f), wallExists(false), dt(0.005) {}
+System::System() {}
 
-/**
- * Adds a given particle to the system
- * @param p The particle to add
- */
-void System::addParticle(Particle *p) {
-    particles.push_back(p);
+//System::System(Solver *solver) : solver(solver), time(0.0f), wallExists(false), dt(0.005) {}
+
+/*
+----------------------------------------------------------------------
+free/clear/allocate simulation data
+----------------------------------------------------------------------
+*/
+
+void System::free_data(void)
+{
+	pVector.clear();
+	fVector.clear();
+	cVector.clear();
 }
 
-/**
- * Adds a force to use in the system when advancing a time step
- * @param f The new force to use in the system
- */
-void System::addForce(Force *f) {
-    forces.push_back(f);
+void System::clear_data(void)
+{
+	int ii, size = pVector.size();
+
+	for (ii = 0; ii < size; ii++)
+	{
+		pVector[ii]->reset();
+	}
 }
 
-/**
- * Adds a constraint to use in the system when advancing a time step
- * @param c The new constraint to use in the system
- */
-void System::addConstraint(Constraint *c) {
-    constraints.push_back(c);
+
+int System::getPositionOfParticle(Particle *p)
+{
+	int pos = std::find(pVector.begin(), pVector.end(), p) - pVector.begin();
+	if (pos < pVector.size())
+	{
+
+		return pos;
+	}
+	return -1;
 }
 
-/**
- * Frees all system data
- */
-void System::free() {
-    particles.clear();
-    forces.clear();
+
+void System::apply_constraints(float ks, float kd)
+{
+	const int dimensions = 2;
+	int vectorSize = pVector.size() * dimensions;
+	int constraintsSize = cVector.size();
+
+	VectorXf q = VectorXf::Zero(vectorSize);
+	VectorXf Q = VectorXf::Zero(vectorSize);
+	MatrixXf M = MatrixXf::Zero(vectorSize, vectorSize);
+	MatrixXf W = MatrixXf::Zero(vectorSize, vectorSize);
+	VectorXf C = VectorXf::Zero(constraintsSize);
+	VectorXf Cder = VectorXf::Zero(constraintsSize);
+	MatrixXf J = MatrixXf::Zero(constraintsSize, vectorSize);
+	MatrixXf Jt = MatrixXf::Zero(vectorSize, constraintsSize);
+	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
+
+  
+	for (int i = 0; i < vectorSize; i += dimensions)
+	{
+		Particle *p = pVector[i / dimensions];
+		for (int d = 0; d < dimensions; d++)
+		{
+			M(i + d,i + d) = p->mass;
+			W(i + d,i + d) = 1 / p->mass;
+			Q[i + d] = p->m_Force[d];
+			q[i + d] = p->m_Velocity[d];
+		}
+	}
+
+	for (int i = 0; i < constraintsSize; i++)
+	{
+		Constraint *c = cVector[i];
+
+		C[i] = c->constraint();
+		Cder[i] = c->constraintDerivative();
+		std::vector<Vec2f> j = c->J();
+		std::vector<Vec2f> jd = c->JDerivative();
+
+		std::vector<Particle *> currentParticles = c->particles;
+		for (int k = 0; k < currentParticles.size(); k++)
+		{
+			int currentPos = getPositionOfParticle(currentParticles[k]);
+			if (currentPos != -1)
+			{
+				int pIndex = currentPos * dimensions;
+				for (int d = 0; d < dimensions; d++)
+				{
+					Jder(i,pIndex + d) = jd[k][d];
+					J(i,pIndex + d) = j[k][d];
+					Jt(pIndex + d,i) = j[k][d];
+				}
+			}
+			else
+			{
+				std::cout << "Error position -1";
+			}
+		}
+	}
+	MatrixXf JW = J * W;
+	MatrixXf JWJt = JW * Jt;
+	VectorXf Jderq = Jder * q;
+	VectorXf JWQ = JW * Q;
+	VectorXf KsC = ks * C;
+	VectorXf KdCd = kd * Cder;
+	VectorXf rhs = - Jderq - JWQ - KsC - KdCd;
+
+	ConjugateGradient<MatrixXf, Lower|Upper> cg;
+	cg.compute(JWJt);
+	VectorXf lambda = cg.solve(rhs);
+
+	VectorXf Qhat = J.transpose() * lambda;
+
+	for (int i = 0; i < pVector.size(); i++)
+	{
+		Particle *p = pVector[i];
+		int index = i * dimensions;
+		for (int d = 0; d < dimensions; d++)
+		{
+			p->m_Force[d] += Qhat[index + d];
+		}
+	}
 }
 
-/**
- * Resets all the system to it's initial state
- */
-void System::reset() {
-    for (Particle *p : particles) {
-        p->reset();
+void System::apply_forces()
+{
+	for (Force *f : fVector)
+	{
+		f->apply();
+	}
+}
+
+void System::clearForces()
+{
+	for (Particle *p : pVector)
+	{
+		p->clearForce();
+	}
+}
+
+void System::addParticle(Particle *p) 
+{
+    pVector.push_back(p);
+}
+
+void System::addForce(Force *f) 
+{
+    fVector.push_back(f);
+}
+
+void System::addConstraint(Constraint *c) 
+{
+    cVector.push_back(c);
+}
+
+/*
+void System::calculateDerivative()
+{
+	for (Particle *p : pVector)
+	{
+		p->updateVelocity(dt);
+		p->updatePosition(dt);
+	}
+}
+
+void System::derivative()
+{
+	clearForces();
+	apply_forces();
+	apply_constraints(100.0f, 10.0f);
+	calculateDerivative();
+}
+*/
+
+VectorXf System::derivEval() {
+    clearForces();
+    apply_forces();
+    // for(int i = 0; i < pVector.size(); i++)
+    // {
+    //     std::cout << "applyP" << pVector[i]->m_Position[0] << " " << pVector[i]->m_Position[1] << std::endl;
+    //     std::cout << "applyF" << pVector[i]->m_Force[0] << " " << pVector[i]->m_Force[1] << std::endl;
+    // }
+    apply_constraints(100.f, 10.f);
+    //ConstraintSolver::solve(this, 100.0f, 10.0f);
+    return computeDerivative();
+}
+
+VectorXf System::computeDerivative() {
+    VectorXf dst(this->getDim());
+    for (int i = 0; i < pVector.size(); i++) {
+        Particle *p = pVector[i];
+        dst[i * 4 + 0] = p->m_Velocity[0];        /* xdot = v */
+        dst[i * 4 + 1] = p->m_Velocity[1];
+        dst[i * 4 + 2] = p->m_Force[0] / p->mass; /* vdot = f/m */
+        dst[i * 4 + 3] = p->m_Force[1] / p->mass;
     }
+    return dst;
 }
 
-/**
- * Draws the forces
- */
-void System::draw(bool drawVelocity, bool drawForce, bool drawConstraint) {
-    drawParticles(drawVelocity, drawForce);
-    if (drawForce) {
-        drawForces();
-    }
-    if (drawConstraint){
-        drawConstraints();
-    }
+unsigned long System::getDim() {
+    return pVector.size() * 2 * 2; // 2 dimensions, velocity and position
 }
 
-/**
- * Runs the active solver on the system to progress it's state by dt time
- * @param dt the amount of time to advance the system
- */
+VectorXf System::getState() {
+    VectorXf r(this->getDim());
+    for (int i = 0; i < this->pVector.size(); i++) {
+        Particle *p = pVector[i];
+        r[i * 4 + 0] = p->m_Position[0];
+        r[i * 4 + 1] = p->m_Position[1];
+        r[i * 4 + 2] = p->m_Velocity[0];
+        r[i * 4 + 3] = p->m_Velocity[1];
+    }
+    return r;
+}
+
+float System::getTime() {
+    return time;
+}
+
+void System::setState(VectorXf src) {
+    this->setState(src, this->getTime());
+}
+
+void System::setState(VectorXf src, float t) {
+    for (int i = 0; i < pVector.size(); i++) {
+        pVector[i]->m_Position[0] = src[i * 4 + 0];
+        pVector[i]->m_Position[1] = src[i * 4 + 1];
+        pVector[i]->m_Velocity[0] = src[i * 4 + 2];
+        pVector[i]->m_Velocity[1] = src[i * 4 + 3];
+    }
+    this->time = t;
+}
+
+
+/*
 void System::step(bool adaptive) {
     if (adaptive) {
         VectorXf before = this->getState();
@@ -83,225 +258,18 @@ void System::step(bool adaptive) {
 
     solver->simulateStep(this, dt);
 }
+*/
 
-
-unsigned long System::getDim() {
-    return particles.size() * 2 * 2; // 3 dimensions, velocity and position
-}
-
-/**
- * Constructs a state given the current system
- * @return A copy of the current state of the system
- */
-VectorXf System::getState() {
-    VectorXf r(this->getDim());
-
-    for (int i = 0; i < this->particles.size(); i++) {
-        Particle *p = particles[i];
-        r[i * 4 + 0] = p->m_Position[0];
-        r[i * 4 + 1] = p->m_Position[1];
-        r[i * 4 + 2] = p->m_Position[0];
-        r[i * 4 + 3] = p->m_Position[1];
-    }
-
-    return r;
-}
-
-float System::getTime() {
-    return time;
-}
-
-/**
- * Evaluates a derivative
- * @param dst The destination vector
- */
-VectorXf System::derivEval() {
-    clearForces();
-    computeForces();
-    ConstraintSolver::solve(this, 100.0f, 10.0f);
-    return computeDerivative();
-}
-
-
-void System::setState(VectorXf src) {
-    this->setState(src, this->getTime());
-}
-
-void System::setState(VectorXf src, float t) {
-    for (int i = 0; i < particles.size(); i++) {
-        particles[i]->m_Position[0] = src[i * 4 + 0];
-        particles[i]->m_Position[1] = src[i * 4 + 1];
-        particles[i]->m_Position[0] = src[i * 4 + 2];
-        particles[i]->m_Position[1] = src[i * 4 + 3];
-    }
-    this->time = t;
-}
-
-/// Private ///
-
-void System::computeForces() {
-    for (Force *f : forces) {
-        f->apply();
-    }
-}
-
-void System::clearForces() {
-    for (Particle *p : particles) {
-        p->m_Force = Vec2f(0.0f, 0.0f);
-    }
-}
-
-VectorXf System::computeDerivative() {
-    VectorXf dst(this->getDim());
-    for (int i = 0; i < particles.size(); i++) {
-        Particle *p = particles[i];
-        dst[i * 4 + 0] = p->m_Velocity[0];        /* xdot = v */
-        dst[i * 4 + 1] = p->m_Velocity[1];
-        dst[i * 4 + 2] = p->m_Force[0] / p->mass; /* vdot = f/m */
-        dst[i * 4 + 3] = p->m_Force[1] / p->mass;
-    }
-    return dst;
-}
-
-void System::drawParticles(bool drawVelocity, bool drawForce) {
-    // 8 x 10
-    if(type == SystemBuilder::CLOTH && !drawForce && !springsCanBreak) {
-        glEnable(GL_LIGHTING);
-        glBegin(GL_TRIANGLES);
-        int dx = 3, dy = 3;
-        glColor3f(0.4f, 0.7f, 0.5f);
-        for (int zx = 0; zx < dx - 1; zx++) {
-            for (int y = 0; y < dy - 1; y++) {
-                int x = zx + y * dx;
-//                Vec3f d1 = particles[x]->position - particles[x + dx + 1]->position;
-//                Vec3f d2 = particles[x]->position - particles[x + dx]->position;
-//                Vec3f n = -(cross(d1, d2) / norm(cross(d1, d2)));
-                Vec3f nx = getNormalForParticleAtIndex(zx, y, dx, dy);
-                Vec3f nxdx1 = getNormalForParticleAtIndex(zx + 1, y + 1, dx, dy);
-                Vec3f nxdx = getNormalForParticleAtIndex(zx, y + 1, dx, dy);
-                //draw front
-//                glNormal3f(n[0], n[1], n[2]);
-                glNormal3f(nx[0], nx[1], nx[2]);
-                glVertex3f(particles[x]->position[0], particles[x]->position[1], particles[x]->position[2]);
-                glNormal3f(nxdx1[0], nxdx1[1], nxdx1[2]);
-                glVertex3f(particles[x + dx + 1]->position[0], particles[x + dx + 1]->position[1],
-                           particles[x + dx + 1]->position[2]);
-                glNormal3f(nxdx[0], nxdx[1], nxdx[2]);
-                glVertex3f(particles[x + dx]->position[0], particles[x + dx]->position[1],
-                           particles[x + dx]->position[2]);
-                //draw back
-//                glNormal3f(-n[0], -n[1], -n[2]);
-                glNormal3f(-nx[0], -nx[1], -nx[2]);
-                glVertex3f(particles[x]->position[0], particles[x]->position[1], particles[x]->position[2]);
-                glNormal3f(-nxdx[0], -nxdx[1], -nxdx[2]);
-                glVertex3f(particles[x + dx]->position[0], particles[x + dx]->position[1],
-                           particles[x + dx]->position[2]);
-                glNormal3f(-nxdx1[0], -nxdx1[1], -nxdx1[2]);
-                glVertex3f(particles[x + dx + 1]->position[0], particles[x + dx + 1]->position[1],
-                           particles[x + dx + 1]->position[2]);
-
-
-//                d1 = particles[x]->position - particles[x + 1]->position;
-//                d2 = particles[x]->position - particles[x + dx + 1]->position;
-//                n = -(cross(d1, d2) / norm(cross(d1, d2)));
-                Vec3f nx1 = getNormalForParticleAtIndex(zx + 1, y, dx, dy);
-                //draw front
-//                glNormal3f(n[0], n[1], n[2]);
-                glNormal3f(nx[0], nx[1], nx[2]);
-                glVertex3f(particles[x]->position[0], particles[x]->position[1], particles[x]->position[2]);
-                glNormal3f(nx1[0], nx1[1], nx1[2]);
-                glVertex3f(particles[x + 1]->position[0], particles[x + 1]->position[1], particles[x + 1]->position[2]);
-                glNormal3f(nxdx1[0], nxdx1[1], nxdx1[2]);
-                glVertex3f(particles[x + dx + 1]->position[0], particles[x + dx + 1]->position[1],
-                           particles[x + dx + 1]->position[2]);
-                //draw back
-//                glNormal3f(-n[0], -n[1], -n[2]);
-                glNormal3f(-nx[0], -nx[1], -nx[2]);
-                glVertex3f(particles[x]->position[0], particles[x]->position[1], particles[x]->position[2]);
-                glNormal3f(-nxdx1[0], -nxdx1[1], -nxdx1[2]);
-                glVertex3f(particles[x + dx + 1]->position[0], particles[x + dx + 1]->position[1],
-                           particles[x + dx + 1]->position[2]);
-                glNormal3f(-nx1[0], -nx1[1], -nx1[2]);
-                glVertex3f(particles[x + 1]->position[0], particles[x + 1]->position[1], particles[x + 1]->position[2]);
-            }
-        }
-        glEnd();
-        glDisable(GL_LIGHTING);
-    }
-    if(wallExists) {
-        glBegin(GL_QUADS);
-            glColor4f(.5f, 0.f, .5f, .5f);
-            // wall
-            glVertex3f(-0.56f, -2.51f, -3.f);
-            glVertex3f(-0.56f,    2.f, -3.f);
-            glVertex3f(-0.56f,    2.f,  4.f);
-            glVertex3f(-0.56f, -2.51f,  4.f);
-
-            glVertex3f(-0.56f, -2.51f,-3.f);
-            glVertex3f(-0.56f, -2.51f, 4.f);
-            glVertex3f(-0.56f,    2.f, 4.f);
-            glVertex3f(-0.56f,    2.f,-3.f);
-
-
-            glColor4f(.7f, .4f, 0.f, .5f);
-            //floor
-            glVertex3f(-0.56f,-2.51f,-3.f);
-            glVertex3f(   5.f,-2.51f,-3.f);
-            glVertex3f(   5.f,-2.51f, 4.f);
-            glVertex3f(-0.56f,-2.51f, 4.f);
-
-            glVertex3f(-0.56f,-2.51f,-3.f);
-            glVertex3f(-0.56f,-2.51f, 4.f);
-            glVertex3f(   5.f,-2.51f, 4.f);
-            glVertex3f(   5.f,-2.51f,-3.f);
-
-        glEnd();
-        glColor4f(.5f, .5f, .5f, 1.f);
-        /* GL_LINES version *\
-        glBegin(GL_LINES);
-        int numZ = 10;
-        int numY = 10;
-        for (int i = 0; i < numZ + 1; i++) {
-            for (int j = 0; j < numY + 1; j++) {
-                glVertex3f(-0.55f, -5.f, -3.f);
-                glVertex3f(-0.55f, -5.f + 7.f * j / numY, -3.f);
-                glVertex3f(-0.55f, -5.f, -3.f);
-                glVertex3f(-0.55f, -5.f, 7.f * i / numZ - 3.f);
-                glVertex3f(-0.55f, -5.f + 7.f * j / numY, -3.f);
-                glVertex3f(-0.55f, -5.f + 7.f * j / numY, 7.f * i / numZ - 3.f);
-                glVertex3f(-0.55f, -5.f, 7.f * i / numZ - 3.f);
-                glVertex3f(-0.55f, -5.f + 7.f * j / numY, 7.f * i / numZ - 3.f);
-            }
-        }
-        glEnd();
-        \* end GL_LINES version */
-    }
-    for (Particle *p : particles) {
-        p->draw(drawVelocity, drawForce);
-    }
-}
-
-void System::drawForces() {
-    for (Force *f : forces) {
-        f->draw();
-    }
-}
-
-void System::drawConstraints() {
-    for (Constraint *c : constraints) {
-        c->draw();
-    }
-}
 
 VectorXf System::checkWallCollision(VectorXf oldState, VectorXf newState) {
     //collision from side
-    for (int i = 0; i < particles.size(); i++) {
+    for (int i = 0; i < pVector.size(); i++) {
         if (newState[i * 6] < -0.55f) {
             newState[i * 6] = -0.55f;
         }
     }
     //Check collision with floor
-    for (int i = 0; i < particles.size(); i++) {
+    for (int i = 0; i < pVector.size(); i++) {
         if(newState[i * 6 + 1]<-2.5f){
             newState[i * 6 + 1]=-2.5f;
         }
@@ -310,17 +278,20 @@ VectorXf System::checkWallCollision(VectorXf oldState, VectorXf newState) {
     return newState;
 }
 
+/*
+
+
 Particle* System::indexParticle(int x, int y, int xdim, int ydim) {
     if (x < 0) {
-        return particles[0 + xdim * y];
+        return pVector[0 + xdim * y];
     } else if (x >= xdim) {
-        return particles[(xdim-1)+xdim * y];
+        return pVector[(xdim-1)+xdim * y];
     } else if (y < 0) {
-        return particles[x + xdim * 0];
+        return pVector[x + xdim * 0];
     } else if (y >= ydim) {
-        return particles[x + xdim * (ydim - 1)];
+        return pVector[x + xdim * (ydim - 1)];
     } else {
-        return particles[x + xdim * y];
+        return pVector[x + xdim * y];
     }
 }
 
@@ -339,3 +310,4 @@ Vec3f System::getNormalForParticleAtIndex(int x, int y, int xdim, int ydim) {
     unitize(sumNormal);
     return sumNormal;
 }
+*/

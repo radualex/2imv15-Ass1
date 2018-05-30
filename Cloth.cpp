@@ -1,10 +1,10 @@
 #include "Cloth.h"
 
 Cloth::Cloth(int xn,int yn, std::vector<Particle*> &pVector, std::vector<Force*> &fVector, 
-std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(1.0f),damping(5.0f),spring(150.0f)
+std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(0.01f),damping(5.0f),spring(150.0f)
 {
-    deltaX = 2.0f/dimX;
-    deltaY = 2.0f/dimY;
+    deltaX = 1.0f/dimX;
+    deltaY = 1.0f/dimY;
     init(pVector, fVector, cVector);
     applyForces(pVector, fVector);
     applyConstraints(pVector,cVector);

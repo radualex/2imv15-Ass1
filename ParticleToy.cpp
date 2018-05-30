@@ -10,7 +10,7 @@
 #include "imageio.h"
 #include "Constraint.h"
 #include "Cloth.h"
-#include "System.h"
+#include "ParticleManipulator.h"
 
 #include <vector>
 #include <stdlib.h>
@@ -24,10 +24,10 @@ using namespace Eigen;
 
 /* macros */
 
-System* sys = new System();
+ParticleManipulator* pm = new ParticleManipulator();
 
 /* external definitions (from solver) */
-extern void simulation_step(System* sys, float dt, int solver);
+extern void simulation_step(ParticleManipulator* pm, float dt, int solver);
 
 /* global variables */
 
@@ -54,15 +54,15 @@ free/clear/allocate simulation data
 
 static void init_cloth(void)
 {
-	sys->clear_data();
-	sys->free_data();
-	auto cloth = new Cloth(10,10, sys->pVector, sys->fVector, sys->cVector);
+	pm->clear_data();
+	pm->free_data();
+	auto cloth = new Cloth(10,10, pm->pVector, pm->fVector, pm->cVector);
 }
 
 static void init_basic(void)
 {
-	sys->clear_data();
-	sys->free_data();
+	pm->clear_data();
+	pm->free_data();
 	const double dist = 0.2;
 	const Vec2f center(0.0, 0.0);
 	const Vec2f offset(dist, 0.0);
@@ -70,25 +70,25 @@ static void init_basic(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	sys->pVector.push_back(new Particle(center + offset, 0.01f));
-	sys->pVector.push_back(new Particle(center + offset + offset, 0.01f));
-	sys->pVector.push_back(new Particle(center + offset + offset + offset, 0.01f));
+	pm->pVector.push_back(new Particle(center + offset, 0.05f));
+	pm->pVector.push_back(new Particle(center + offset + offset, 0.05f));
+	pm->pVector.push_back(new Particle(center + offset + offset + offset, 0.05f));
 
-	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.50));
-	// sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.50));
-	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.50));
-	sys->fVector.push_back(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
+	pm->fVector.push_back(new SpringForce(pm->pVector, 0, 1, dist, 150.0, 1.50));
+	pm->fVector.push_back(new SpringForce(pm->pVector, 1, 2, dist, 150.0, 1.50));
+	pm->fVector.push_back(new SpringForce(pm->pVector, 0, 2, dist, 150.0, 1.50));
+	pm->fVector.push_back(new GravityForce(pm->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
-	sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
-	sys->cVector.push_back(new RodConstraint(sys->pVector[0], sys->pVector[1], dist));
+	pm->cVector.push_back(new RodConstraint(pm->pVector[1], pm->pVector[2], dist));
+	pm->cVector.push_back(new RodConstraint(pm->pVector[0], pm->pVector[1], dist));
 
-	sys->cVector.push_back(new CircularWireConstraint(sys->pVector[0], center, dist));
+	pm->cVector.push_back(new CircularWireConstraint(pm->pVector[0], center, dist));
 }
 
 static void init_angular(void)
 {
-	sys->clear_data();
-	sys->free_data();
+	pm->clear_data();
+	pm->free_data();
 	double dist = -0.2;
 	const Vec2f start(0.0, 0.6);
 	const Vec2f offset(0.0, dist);
@@ -98,14 +98,13 @@ static void init_angular(void)
 		if(i%2 == 0)
 		k = 1;
 		else k = -1;
-		sys->pVector.push_back(new Particle(start + i*offset + k*offset2, 10.0f));
+		pm->pVector.push_back(new Particle(start + i*offset + k*offset2, 10.0f));
 	}
 	for(int i = 0; i<6; i++){
-		sys->fVector.push_back(new AngularSpringForce(sys->pVector, i, i+1, i+2, dist, 120.0, 100.0));
+		pm->fVector.push_back(new AngularSpringForce(pm->pVector, i, i+1, i+2, dist, 120.0, 100.0));
 	}
 
-
-	//sys->fVector.push_back(new GravityForce({sys->pVector[7]}, Vec2f(0, -9.81f)));
+	//pm->fVector.push_back(new GravityForce({pm->pVector[7]}, Vec2f(0, -9.81f)));
 
 	//fVector.push_back(new AngularSpringForce(pVector, 0, 1, 2, dist, 1.0, 1.0));
 
@@ -163,17 +162,17 @@ static void post_display(void)
 
 static void draw_particles(void)
 {
-	int size = sys->pVector.size();
+	int size = pm->pVector.size();
 
 	for (int ii = 0; ii < size; ii++)
 	{
-		sys->pVector[ii]->draw();
+		pm->pVector[ii]->draw();
 	}
 }
 
 static void draw_forces(void)
 {
-	for (Force *f : sys->fVector)
+	for (Force *f : pm->fVector)
 	{
 		f->draw();
 	}
@@ -181,7 +180,7 @@ static void draw_forces(void)
 
 static void draw_constraints(void)
 {
-	for (Constraint *c : sys->cVector)
+	for (Constraint *c : pm->cVector)
 	{
 		c->draw();
 	}
@@ -232,11 +231,11 @@ static void get_from_UI()
 
 static void remap_GUI()
 {
-	int ii, size = sys->pVector.size();
+	int ii, size = pm->pVector.size();
 	for (ii = 0; ii < size; ii++)
 	{
-		sys->pVector[ii]->m_Position[0] = sys->pVector[ii]->m_ConstructPos[0];
-		sys->pVector[ii]->m_Position[1] = sys->pVector[ii]->m_ConstructPos[1];
+		pm->pVector[ii]->m_Position[0] = pm->pVector[ii]->m_ConstructPos[0];
+		pm->pVector[ii]->m_Position[1] = pm->pVector[ii]->m_ConstructPos[1];
 	}
 }
 
@@ -252,7 +251,7 @@ static void key_func(unsigned char key, int x, int y)
 	{
 	case 'c':
 	case 'C':
-		sys->clear_data();
+		pm->clear_data();
 		break;
 
 	case 'd':
@@ -262,7 +261,7 @@ static void key_func(unsigned char key, int x, int y)
 
 	case 'q':
 	case 'Q':
-		sys->free_data();
+		pm->free_data();
 		exit(0);
 		break;
 	case ' ':
@@ -346,9 +345,9 @@ static Particle *getClosestParticle(int x, int y)
 
 	double closestDistance = 10000000;
 	Particle *closestParticle;
-	for (int i = 0; i < sys->pVector.size(); i++)
+	for (int i = 0; i < pm->pVector.size(); i++)
 	{
-		Vec2f position = sys->pVector[i]->m_Position;
+		Vec2f position = pm->pVector[i]->m_Position;
 		double screenCoordinates[3];
 		gluProject(position[0], position[1], 0, modelMatrix, projectionMatrix, viewMatrix,
 				   &screenCoordinates[0], &screenCoordinates[1], &screenCoordinates[2]);
@@ -356,7 +355,7 @@ static Particle *getClosestParticle(int x, int y)
 		if (distance < closestDistance)
 		{
 			closestDistance = distance;
-			closestParticle = sys->pVector[i];
+			closestParticle = pm->pVector[i];
 		}
 	}
 	return closestParticle;
@@ -387,16 +386,16 @@ static void mouse_func(int button, int state, int x, int y)
 
 		springParticle = new Particle(mousePos, 0.01f);
 	
-		sys->pVector.push_back(springParticle);
+		pm->pVector.push_back(springParticle);
 
-		const int positionClosesetPart = sys->getPositionOfParticle(closestParticle);
-		const int positionStringParticle = sys->getPositionOfParticle(springParticle);
-		sys->fVector.push_back(new SpringForce(sys->pVector, positionClosesetPart, positionStringParticle, 0.2, 150.0, 1.5));
+		const int positionClosesetPart = pm->getPositionOfParticle(closestParticle);
+		const int positionStringParticle = pm->getPositionOfParticle(springParticle);
+		pm->fVector.push_back(new SpringForce(pm->pVector, positionClosesetPart, positionStringParticle, 0.2, 150.0, 1.5));
 	}
 	else if (state == GLUT_UP)
 	{
-		sys->fVector.pop_back();
-		sys->pVector.pop_back();
+		pm->fVector.pop_back();
+		pm->pVector.pop_back();
 	}
 }
 
@@ -424,14 +423,14 @@ static void idle_func(void)
 	if (dsim)
 	{
 		//solver based on solverNr(default 1).
-		simulation_step(sys, dt, solverNr);
+		simulation_step(pm, dt, solverNr);
 	}
 
 	else
 	{
 		get_from_UI();
 		remap_GUI();
-		sys->clear_data();
+		pm->clear_data();
 	}
 
 	glutSetWindow(win_id);

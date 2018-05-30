@@ -2,8 +2,8 @@
 
 Cloth::Cloth(int xn,int yn, std::vector<Particle*> &pVector, std::vector<Force*> &fVector, std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(0.6f),damping(5.0f),spring(120.0f)
 {
-    deltaX = 2.5f/dimX;
-    deltaY = 2.5f/dimY;
+    deltaX = 2.0f/dimX;
+    deltaY = 2.0f/dimY;
     init(pVector, fVector, cVector);
     applyForces(pVector, fVector);
     applyConstraints(pVector,cVector);
@@ -11,16 +11,12 @@ Cloth::Cloth(int xn,int yn, std::vector<Particle*> &pVector, std::vector<Force*>
 
 void Cloth::init(std::vector<Particle*> &pVector, std::vector<Force*> &fVector, std::vector<Constraint*> &cVector)
 {
-    const Vec2f center(0.0, 0.0);
-    //pVector.clear();
     //pVector.resize(dimX * dimY);
     //fVector.resize(2*dimX*dimY - dimX - dimY + 2*(dimX-1)*(dimY-1) + 1);
     //cVector.resize(2);
-   // std::cout << particles.size() << "|";
-    //resize fVector and pVector
     for(int i = 0; i < dimX; i++){
         for(int j = 0; j < dimY; j++){
-            auto p = new Particle(Vec2f(deltaX*i, deltaY*j), particleMass);
+            auto p = new Particle(Vec2f(deltaX*i-0.9f, deltaY*j - 0.9f), particleMass);
             pVector.push_back(p);
         }
     }
@@ -73,12 +69,38 @@ void Cloth::applyForces(std::vector<Particle*> &pVector, std::vector<Force*> &fV
 
 void Cloth::applyConstraints(std::vector<Particle*> &pVector, std::vector<Constraint*> &cVector)
 {
-    double radius = 0.2f;
+    double radius = 0.00002f;
+    float diagonalDist = sqrt(pow(deltaX,2) + pow(deltaY,2));
     //Make sure the top edge particles don't move too much
     auto c1 = new CircularWireConstraint(pVector[0], pVector[0]->m_ConstructPos, radius);
     cVector.push_back(c1);
     auto c2 = new CircularWireConstraint(pVector[dimX - 1],pVector[dimX - 1]->m_ConstructPos, radius);
     cVector.push_back(c2);
     //TO DO: try with whole first row
-    //TO DO: add rod constraint between particles
+    for(int i = 0; i< dimX - 1; i++){
+        for(int j = 0; j < dimY; j++){
+            //all particles have a spring connecting them to the particle on the right
+            auto c = new RodConstraint(pVector[j*dimX + i],pVector[ j * dimX + (i+1)],1.05f*deltaX);
+            cVector.push_back(c);
+        }
+    }
+
+    for(int i = 0; i< dimX; i++){
+        for(int j = 0; j < dimY - 1; j++){
+            //all particles have a spring connecting them to the particle on the bottom
+            auto c = new RodConstraint(pVector[j*dimX + i],pVector[ (j + 1) * dimX + i],1.05f*deltaY);
+            cVector.push_back(c);
+        }
+    }
+
+    for(int i = 0; i < dimX - 1; i++){
+        for(int j = 0; j < dimY - 1; j++){
+            //all particles have a spring connecting to the bottom right diagonal
+            auto c1 = new RodConstraint(pVector[j*dimX + i], pVector[(j+1)*dimX + (i+1)], 1.5f*diagonalDist);
+            cVector.push_back(c1);
+            //all particles have a spring connecting to the bottom left diagonal
+            auto c2 = new RodConstraint(pVector[j*dimX + (i+1)],pVector[(j+1)*dimX + i], 1.5f*diagonalDist);
+            cVector.push_back(c2);
+        }
+    }
 }

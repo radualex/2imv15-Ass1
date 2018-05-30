@@ -53,13 +53,13 @@ static void init_system(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	sys->addParticle(new Particle(center + offset, 1.0f));
-	sys->addParticle(new Particle(center + offset + offset, 1.0f));
-	sys->addParticle(new Particle(center + offset + offset + offset, 1.0f));
+	sys->addParticle(new Particle(center + offset, 10.0f));
+	sys->addParticle(new Particle(center + offset + offset, 2.0f));
+	sys->addParticle(new Particle(center + offset + offset + offset, 2.0f));
 
-	sys->addForce(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.5));
-	sys->addForce(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.5));
-	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.5));
+	sys->addForce(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 15));
+	sys->addForce(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 15));
+	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 15));
 	sys->addForce(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
 	sys->addConstraint(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));

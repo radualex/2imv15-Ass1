@@ -36,12 +36,3 @@ void AngularSpringForce::draw() {
     glVertex2f(particles[m_p3]->m_Position[0], particles[m_p3]->m_Position[1]);
     glEnd();
 }
-
-/*map<int, map<int, float>> AngularSpringForce::jx() {
-    map<int, map<int, float>> values = map<int, map<int, float>>();
-    return values;
-}
-
-MatrixXf AngularSpringForce::jv() {
-    return MatrixXf();
-}*/

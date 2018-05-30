@@ -12,15 +12,14 @@
 class Cloth
 {
 public:
-    Cloth(int x, int y);
-    void init();
+    Cloth(int x, int y, std::vector<Particle*> &pVector,std::vector<Force*> &fVector, std::vector<Constraint*> &cVector);
     void reset();
     void draw();
-    std::vector<Force *> fVector;
-    std::vector<Constraint *> cVector;
+    //std::vector<Force*> fVector;
+    //std::vector<Constraint*> cVector;
+    //std::vector<Particle*> particles;
 
 private:
-    std::vector<Particle*> particles;
     int dimX, dimY;
     const float particleMass;
     const float damping;
@@ -28,6 +27,7 @@ private:
     //
     float deltaX;
     float deltaY;
-    void applyForces();
-    void applyConstraints();
+    void init(std::vector<Particle*> &pVector, std::vector<Force*> &fVector, std::vector<Constraint*> &cVector);
+    void applyForces(std::vector<Particle*> &pVector, std::vector<Force*> &fVector);
+    void applyConstraints(std::vector<Particle*> &pVector, std::vector<Constraint*> &cVector);
 };

@@ -33,6 +33,10 @@
         "typeinfo": "cpp",
         "deque": "cpp",
         "numeric": "cpp",
+<<<<<<< HEAD
+        "list": "cpp"
+    }
+=======
         "functional": "cpp",
         "sparse": "cpp",
         "complex": "cpp",
@@ -45,4 +49,5 @@
     },
     "C_Cpp.errorSquiggles": "Enabled",
     "C_Cpp.intelliSenseEngineFallback": "Disabled"
+>>>>>>> 4311bfb4428a18370231a4d28b6be0f2822eecf8
 }

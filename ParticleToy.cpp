@@ -8,6 +8,7 @@
 #include "CircularWireConstraint.h"
 #include "imageio.h"
 #include "Constraint.h"
+#include "Cloth.h"
 #include "System.h"
 
 #include <vector>
@@ -46,9 +47,10 @@ static int hmx, hmy;
 
 static void init_system(void)
 {
-	const double dist = 0.2;
-	const Vec2f center(0.0, 0.0);
-	const Vec2f offset(dist, 0.0);
+	// auto cloth = new Cloth(10,10, sys->pVector, sys->fVector, sys->cVector);
+	// const double dist = 0.2;
+	// const Vec2f center(0.0, 0.0);
+	// const Vec2f offset(dist, 0.0);
 
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
@@ -62,13 +64,9 @@ static void init_system(void)
 	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 15));
 	sys->addForce(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
-	sys->addConstraint(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
-	sys->addConstraint(new CircularWireConstraint(sys->pVector[0], center, dist));
+	// sys->addConstraint(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
+	// sys->addConstraint(new CircularWireConstraint(sys->pVector[0], center, dist));
 
-	// for(int i = 0; i < sys->pVector.size(); i++)
-    // {
-    //     std::cout << sys->pVector[i]->m_Position[0] << " " << sys->pVector[i]->m_Position[1] << std::endl;
-    // }
 }
 
 

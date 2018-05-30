@@ -519,7 +519,7 @@ int main(int argc, char **argv)
 	printf("\t Press 'a' to show Default example\n");
 	printf("\t Press 's' to show Cloth example\n");
 	printf("\t Press 'w' to show Angular springs example\n");
-	printf("\t Press 'z' to toggle between resolving collision and not. USe for cloth")
+	printf("\t Press 'z' to toggle between resolving collision and not. USe for cloth");
 	printf("\t Press '1' to apply Explicit Euler(Default)\n");
 	printf("\t Press '2' to apply Mid-point\n");
 	printf("\t Press '3' to apply Runge-kutta\n");

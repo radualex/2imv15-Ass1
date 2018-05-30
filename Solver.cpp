@@ -52,6 +52,7 @@ void applyRungeKutta(ParticleManipulator *pm, float dt) {
     VectorXf deriv = pm->derivEval();
     VectorXf k1 = dt * deriv;
     VectorXf newState = oldState + k1 / 2;
+    pm->setState(newState); 
 
     deriv = pm->derivEval();
     VectorXf k2 = dt * deriv;

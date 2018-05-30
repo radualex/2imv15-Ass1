@@ -74,13 +74,13 @@ static void init_basic(void)
 	sys->pVector.push_back(new Particle(center + offset + offset, 0.01f));
 	sys->pVector.push_back(new Particle(center + offset + offset + offset, 0.01f));
 
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.50));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.50));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.50));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.50));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.50));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.50));
 	sys->fVector.push_back(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
-	//sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
-	//sys->cVector.push_back(new RodConstraint(sys->pVector[0], sys->pVector[1], dist));
+	sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
+	sys->cVector.push_back(new RodConstraint(sys->pVector[0], sys->pVector[1], dist));
 
 	sys->cVector.push_back(new CircularWireConstraint(sys->pVector[0], center, dist));
 }

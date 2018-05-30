@@ -56,14 +56,14 @@ void System::apply_constraints(float ks, float kd)
 	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
 
   
-	for (int i = 0; i < vectorSize; i += dimensions)
+	for (int i = 0; i < pVector.size(); i ++)
 	{
-		Particle *p = pVector[i / dimensions];
+		Particle *p = pVector[i];
 		for (int d = 0; d < dimensions; d++)
 		{
-			W(i + d,i + d) = 1 / p->mass;
-			Q[i + d] = p->m_Force[d];
-			q[i + d] = p->m_Velocity[d];
+			W(dimensions * i + d,dimensions*i + d) = 1 / p->mass;
+			Q[dimensions*i + d] = p->m_Force[d];
+			q[dimensions*i + d] = p->m_Velocity[d];
 		}
 	}
 
@@ -98,11 +98,11 @@ void System::apply_constraints(float ks, float kd)
 	}
 	MatrixXf JW = J * W;
 	MatrixXf JWJt = JW * Jt;
-	VectorXf Jderq = Jder * q;
+	VectorXf Jderq = -1 * Jder * q;
 	VectorXf JWQ = JW * Q;
 	VectorXf KsC = ks * C;
 	VectorXf KdCd = kd * Cder;
-	VectorXf rhs = - Jderq - JWQ - KsC - KdCd;
+	VectorXf rhs = Jderq - JWQ - KsC - KdCd;
 
 	ConjugateGradient<MatrixXf, Lower|Upper> cg;
 	auto lambda = cg.compute(JWJt).solve(rhs);
@@ -153,7 +153,7 @@ void System::addConstraint(Constraint *c)
 VectorXf System::derivEval() {
     clearForces();
     apply_forces();
-    apply_constraints(100.0f, 10.0f);
+    apply_constraints(150.0f, 5.0f);
     return computeDerivative();
 }
 

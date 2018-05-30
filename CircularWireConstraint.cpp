@@ -26,14 +26,13 @@ void CircularWireConstraint::draw()
 float CircularWireConstraint::constraint()
 {
     Vec2f pVector = m_p->m_Position - m_center;
-    return pVector * pVector - pow(m_radius, 2);
+    return (pVector * pVector) - (m_radius * m_radius);
 }
 
 float CircularWireConstraint::constraintDerivative()
 {
     Vec2f pVectorDerivative = m_p->m_Position - m_center;
-    Vec2f vVectorDerivative = m_p->m_Velocity;
-    return pVectorDerivative * vVectorDerivative * 2;
+    return 2 * (pVectorDerivative * m_p->m_Velocity);
 }
 
 std::vector<Vec2f> CircularWireConstraint::J()

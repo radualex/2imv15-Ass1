@@ -52,159 +52,17 @@ free/clear/allocate simulation data
 ----------------------------------------------------------------------
 */
 
-static void free_data(void)
-{
-	sys->pVector.clear();
-	sys->fVector.clear();
-	sys->cVector.clear();
-}
-
-static void clear_data(void)
-{
-	int ii, size = sys->pVector.size();
-
-	for (ii = 0; ii < size; ii++)
-	{
-		sys->pVector[ii]->reset();
-	}
-}
-
-static int getPositionOfParticle(Particle *p)
-{
-	int pos = std::find(sys->pVector.begin(), sys->pVector.end(), p) - sys->pVector.begin();
-	if (pos < sys->pVector.size())
-	{
-		return pos;
-	}
-	return -1;
-}
-
-static void apply_constraints(float ks, float kd)
-{
-	const int dimensions = 2;
-	int vectorSize = sys->pVector.size() * dimensions;
-	int constraintsSize = sys->cVector.size();
-
-	VectorXf q = VectorXf::Zero(vectorSize);
-	VectorXf Q = VectorXf::Zero(vectorSize);
-	MatrixXf M = MatrixXf::Zero(vectorSize, vectorSize);
-	MatrixXf W = MatrixXf::Zero(vectorSize, vectorSize);
-	VectorXf C = VectorXf::Zero(constraintsSize);
-	VectorXf Cder = VectorXf::Zero(constraintsSize);
-	MatrixXf J = MatrixXf::Zero(constraintsSize, vectorSize);
-	MatrixXf Jt = MatrixXf::Zero(vectorSize, constraintsSize);
-	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
-
-	for (int i = 0; i < vectorSize; i += dimensions)
-	{
-		Particle *p = sys->pVector[i / dimensions];
-		for (int d = 0; d < dimensions; d++)
-		{
-			M(i + d, i + d) = p->mass;
-			W(i + d, i + d) = 1 / p->mass;
-			Q[i + d] = p->m_Force[d];
-			q[i + d] = p->m_Velocity[d];
-		}
-	}
-
-	for (int i = 0; i < constraintsSize; i++)
-	{
-		Constraint *c = sys->cVector[i];
-
-		C[i] = c->constraint();
-		Cder[i] = c->constraintDerivative();
-		std::vector<Vec2f> j = c->J();
-		std::vector<Vec2f> jd = c->JDerivative();
-
-		std::vector<Particle *> currentParticles = c->particles;
-		for (int k = 0; k <= currentParticles.size(); k++)
-		{
-			int currentPos = getPositionOfParticle(currentParticles[k]);
-			if (currentPos != -1)
-			{
-				int pIndex = currentPos * dimensions;
-				for (int d = 0; d < dimensions; d++)
-				{
-					Jder(i, pIndex + d) = jd[k][d];
-					J(i, pIndex + d) = j[k][d];
-					Jt(pIndex + d, i) = j[k][d];
-				}
-			}
-			else
-			{
-				std::cout << "Error position -1";
-			}
-		}
-	}
-	MatrixXf JW = J * W;
-	MatrixXf JWJt = JW * Jt;
-	VectorXf Jderq = Jder * q;
-	VectorXf JWQ = JW * Q;
-	VectorXf KsC = ks * C;
-	VectorXf KdCd = kd * Cder;
-	VectorXf rhs = -Jderq - JWQ - KsC - KdCd;
-
-	ConjugateGradient<MatrixXf, Lower | Upper> cg;
-	cg.compute(JWJt);
-	VectorXf lambda = cg.solve(rhs);
-
-	VectorXf Qhat = J.transpose() * lambda;
-
-	for (int i = 0; i < sys->pVector.size(); i++)
-	{
-		Particle *p = sys->pVector[i];
-		int index = i * dimensions;
-		for (int d = 0; d < dimensions; d++)
-		{
-			p->m_Force[d] += Qhat[index + d];
-		}
-	}
-}
-
-static void calculateDerivative()
-{
-	for (Particle *p : sys->pVector)
-	{
-		p->updateVelocity(dt);
-		p->updatePosition(dt);
-	}
-}
-
-static void apply_forces()
-{
-	for (Force *f : sys->fVector)
-	{
-		f->apply();
-	}
-}
-
-static void clearForces()
-{
-	for (Particle *p : sys->pVector)
-	{
-		p->clearForce();
-	}
-}
-
-static void derivative()
-{
-	clearForces();
-	apply_forces();
-	apply_constraints(100.0f, 10.0f);
-	calculateDerivative();
-}
-
 static void init_cloth(void)
 {
-	clear_data();
-	free_data();
+	sys->clear_data();
+	sys->free_data();
 	auto cloth = new Cloth(10,10, sys->pVector, sys->fVector, sys->cVector);
 }
 
 static void init_basic(void)
 {
-	clear_data();
-	free_data();
+	sys->clear_data();
+	sys->free_data();
 	const double dist = 0.2;
 	const Vec2f center(0.0, 0.0);
 	const Vec2f offset(dist, 0.0);
@@ -216,20 +74,21 @@ static void init_basic(void)
 	sys->pVector.push_back(new Particle(center + offset + offset, 3.0f));
 	sys->pVector.push_back(new Particle(center + offset + offset + offset, 3.0f));
 
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 10.0, 100.0));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 10.0, 100.0));
-	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 10.0, 100.0));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 10.0, 100.0));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 10.0, 100.0));
+	// sys->fVector.push_back(new SpringForce(sys->pVector, 0, 2, dist, 10.0, 100.0));
 	sys->fVector.push_back(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
-	sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
+	//sys->cVector.push_back(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
+	//sys->cVector.push_back(new RodConstraint(sys->pVector[0], sys->pVector[1], dist));
 
 	sys->cVector.push_back(new CircularWireConstraint(sys->pVector[0], center, dist));
 }
 
 static void init_angular(void)
 {
-	clear_data();
-	free_data();
+	sys->clear_data();
+	sys->free_data();
 	double dist = -0.2;
 	const Vec2f start(0.0, 0.6);
 	const Vec2f offset(0.0, dist);
@@ -644,7 +503,7 @@ int main(int argc, char **argv)
 	if (argc == 1)
 	{
 		N = 64;
-		dt = 0.0001f;
+		dt = 0.001f;
 		d = 5.f;
 		fprintf(stderr, "Using defaults : N=%d dt=%g d=%g\n",
 				N, dt, d);

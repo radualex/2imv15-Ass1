@@ -29,7 +29,7 @@ float RodConstraint::constraintDerivative()
 std::vector<Vec2f> RodConstraint::J()
 {
     Vec2f derivativeP1 = (m_p1->m_Position - m_p2->m_Position) * 2;
-    Vec2f derivativeP2 = (m_p2->m_Position - m_p2->m_Position) * 2;
+    Vec2f derivativeP2 = (m_p2->m_Position - m_p1->m_Position) * 2;
 
     return std::vector<Vec2f>{derivativeP1, derivativeP2};
 }
@@ -37,7 +37,7 @@ std::vector<Vec2f> RodConstraint::J()
 std::vector<Vec2f> RodConstraint::JDerivative()
 {
     Vec2f derivativeP1 = (m_p1->m_Velocity - m_p2->m_Velocity) * 2;
-    Vec2f derivativeP2 = (m_p2->m_Velocity - m_p2->m_Velocity) * 2;
+    Vec2f derivativeP2 = (m_p2->m_Velocity - m_p1->m_Velocity) * 2;
 
     return std::vector<Vec2f>{derivativeP1, derivativeP2};
 }

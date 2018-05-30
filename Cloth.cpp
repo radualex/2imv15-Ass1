@@ -1,7 +1,7 @@
 #include "Cloth.h"
 
 Cloth::Cloth(int xn,int yn, std::vector<Particle*> &pVector, std::vector<Force*> &fVector, 
-std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(0.1f),damping(50.0f),spring(150.0f)
+std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(1.0f),damping(5.0f),spring(150.0f)
 {
     deltaX = 2.0f/dimX;
     deltaY = 2.0f/dimY;
@@ -98,10 +98,10 @@ void Cloth::applyConstraints(std::vector<Particle*> &pVector, std::vector<Constr
     // for(int i = 0; i < dimX - 1; i++){
     //     for(int j = 0; j < dimY - 1; j++){
     //         //all particles have a spring connecting to the bottom right diagonal
-    //         auto c1 = new RodConstraint(pVector[j*dimX + i], pVector[(j+1)*dimX + (i+1)], 1.5f*diagonalDist);
+    //         auto c1 = new RodConstraint(pVector[j*dimX + i], pVector[(j+1)*dimX + (i+1)], 1.05f*diagonalDist);
     //         cVector.push_back(c1);
     //         //all particles have a spring connecting to the bottom left diagonal
-    //         auto c2 = new RodConstraint(pVector[j*dimX + (i+1)],pVector[(j+1)*dimX + i], 1.5f*diagonalDist);
+    //         auto c2 = new RodConstraint(pVector[j*dimX + (i+1)],pVector[(j+1)*dimX + i], 1.05f*diagonalDist);
     //         cVector.push_back(c2);
     //     }
     // }

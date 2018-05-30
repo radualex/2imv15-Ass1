@@ -67,11 +67,11 @@ void System::apply_constraints(float ks, float kd)
 		for (int d = 0; d < dimensions; d++)
 		{
 			M(i + d,i + d) = p->mass;
-			W(i + d,i + d) = 1 / p->mass;
 			Q[i + d] = p->m_Force[d];
 			q[i + d] = p->m_Velocity[d];
 		}
 	}
+	W = M.inverse();
 
 	for (int i = 0; i < constraintsSize; i++)
 	{
@@ -111,19 +111,17 @@ void System::apply_constraints(float ks, float kd)
 	VectorXf rhs = - Jderq - JWQ - KsC - KdCd;
 
 	ConjugateGradient<MatrixXf, Lower|Upper> cg;
-	cg.compute(JWJt);
-	VectorXf lambda = cg.solve(rhs);
+	auto lambda = cg.compute(JWJt).solve(rhs);
 
-	VectorXf Qhat = J.transpose() * lambda;
+	VectorXf Qhat = Jt * lambda;
 
 	for (int i = 0; i < pVector.size(); i++)
 	{
 		Particle *p = pVector[i];
 		int index = i * dimensions;
-		for (int d = 0; d < dimensions; d++)
-		{
-			p->m_Force[d] += Qhat[index + d];
-		}
+
+		p->m_Force[0] += Qhat[index];
+		p->m_Force[1] += Qhat[index + 1];
 	}
 }
 
@@ -158,35 +156,10 @@ void System::addConstraint(Constraint *c)
     cVector.push_back(c);
 }
 
-/*
-void System::calculateDerivative()
-{
-	for (Particle *p : pVector)
-	{
-		p->updateVelocity(dt);
-		p->updatePosition(dt);
-	}
-}
-
-void System::derivative()
-{
-	clearForces();
-	apply_forces();
-	apply_constraints(100.0f, 10.0f);
-	calculateDerivative();
-}
-*/
-
 VectorXf System::derivEval() {
     clearForces();
     apply_forces();
-    // for(int i = 0; i < pVector.size(); i++)
-    // {
-    //     std::cout << "applyP" << pVector[i]->m_Position[0] << " " << pVector[i]->m_Position[1] << std::endl;
-    //     std::cout << "applyF" << pVector[i]->m_Force[0] << " " << pVector[i]->m_Force[1] << std::endl;
-    // }
-    apply_constraints(100.f, 10.f);
-    //ConstraintSolver::solve(this, 100.0f, 10.0f);
+    apply_constraints(100.0f, 10.0f);
     return computeDerivative();
 }
 

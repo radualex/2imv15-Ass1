@@ -31,9 +31,9 @@ float CircularWireConstraint::constraint()
 
 float CircularWireConstraint::constraintDerivative()
 {
-    Vec2f pVectorDerivative = 2 * (m_p->m_Position - m_center);
-    Vec2f vVectorDerivative = 2 * m_p->m_Velocity;
-    return pVectorDerivative * vVectorDerivative;
+    Vec2f pVectorDerivative = m_p->m_Position - m_center;
+    Vec2f vVectorDerivative = m_p->m_Velocity;
+    return pVectorDerivative * vVectorDerivative * 2;
 }
 
 std::vector<Vec2f> CircularWireConstraint::J()

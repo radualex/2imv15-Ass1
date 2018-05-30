@@ -70,9 +70,9 @@ static void init_basic(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	sys->pVector.push_back(new Particle(center + offset, 2.0f));
-	sys->pVector.push_back(new Particle(center + offset + offset, 2.0f));
-	sys->pVector.push_back(new Particle(center + offset + offset + offset, 2.0f));
+	sys->pVector.push_back(new Particle(center + offset, 0.01f));
+	sys->pVector.push_back(new Particle(center + offset + offset, 0.01f));
+	sys->pVector.push_back(new Particle(center + offset + offset + offset, 0.01f));
 
 	sys->fVector.push_back(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.50));
 	sys->fVector.push_back(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.50));
@@ -385,7 +385,7 @@ static void mouse_func(int button, int state, int x, int y)
 
 		const Vec2f mousePos(position[0], -position[1]);
 
-		springParticle = new Particle(mousePos, 1.0f);
+		springParticle = new Particle(mousePos, 0.01f);
 	
 		sys->pVector.push_back(springParticle);
 

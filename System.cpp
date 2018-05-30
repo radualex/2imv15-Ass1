@@ -48,7 +48,6 @@ void System::apply_constraints(float ks, float kd)
 
 	VectorXf q = VectorXf::Zero(vectorSize);
 	VectorXf Q = VectorXf::Zero(vectorSize);
-	MatrixXf M = MatrixXf::Zero(vectorSize, vectorSize);
 	MatrixXf W = MatrixXf::Zero(vectorSize, vectorSize);
 	VectorXf C = VectorXf::Zero(constraintsSize);
 	VectorXf Cder = VectorXf::Zero(constraintsSize);
@@ -62,12 +61,11 @@ void System::apply_constraints(float ks, float kd)
 		Particle *p = pVector[i / dimensions];
 		for (int d = 0; d < dimensions; d++)
 		{
-			M(i + d,i + d) = p->mass;
+			W(i + d,i + d) = 1 / p->mass;
 			Q[i + d] = p->m_Force[d];
 			q[i + d] = p->m_Velocity[d];
 		}
 	}
-	W = M.inverse();
 
 	for (int i = 0; i < constraintsSize; i++)
 	{

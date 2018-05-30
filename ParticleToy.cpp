@@ -197,6 +197,7 @@ static void derivative()
 static void init_system(void)
 {
 	auto cloth = new Cloth(10,10, pVector, fVector, cVector);
+	std::cout<<cVector.size();
 	/*const double dist = 0.2;
 	const Vec2f center(0.0, 0.0);
 	const Vec2f offset(dist, 0.0);

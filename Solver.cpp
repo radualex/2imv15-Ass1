@@ -3,7 +3,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
 #include "System.h"
-#include "Solver.h"
 
 #include <vector>
 

@@ -1,7 +1,7 @@
 #include "Cloth.h"
 
 Cloth::Cloth(int xn,int yn, std::vector<Particle*> &pVector, std::vector<Force*> &fVector, 
-std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(0.1f),damping(50.0f),spring(150.0f)
+std::vector<Constraint*> &cVector) : dimX(xn),dimY(yn),particleMass(0.1f),damping(150.0f),spring(150.0f)
 {
     deltaX = 2.0f/dimX;
     deltaY = 2.0f/dimY;

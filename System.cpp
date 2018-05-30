@@ -37,6 +37,7 @@ int System::getPositionOfParticle(Particle *p)
 	int pos = std::find(pVector.begin(), pVector.end(), p) - pVector.begin();
 	if (pos < pVector.size())
 	{
+
 		return pos;
 	}
 	return -1;
@@ -59,6 +60,7 @@ void System::apply_constraints(float ks, float kd)
 	MatrixXf Jt = MatrixXf::Zero(vectorSize, constraintsSize);
 	MatrixXf Jder = MatrixXf::Zero(constraintsSize, vectorSize);
 
+  
 	for (int i = 0; i < vectorSize; i += dimensions)
 	{
 		Particle *p = pVector[i / dimensions];
@@ -125,17 +127,6 @@ void System::apply_constraints(float ks, float kd)
 	}
 }
 
-/*
-void System::calculateDerivative()
-{
-	for (Particle *p : pVector)
-	{
-		p->updateVelocity(dt);
-		p->updatePosition(dt);
-	}
-}
-*/
-
 void System::apply_forces()
 {
 	for (Force *f : fVector)
@@ -168,6 +159,15 @@ void System::addConstraint(Constraint *c)
 }
 
 /*
+void System::calculateDerivative()
+{
+	for (Particle *p : pVector)
+	{
+		p->updateVelocity(dt);
+		p->updatePosition(dt);
+	}
+}
+
 void System::derivative()
 {
 	clearForces();
@@ -180,7 +180,12 @@ void System::derivative()
 VectorXf System::derivEval() {
     clearForces();
     apply_forces();
-    apply_constraints(100.0f, 10.0f);
+    // for(int i = 0; i < pVector.size(); i++)
+    // {
+    //     std::cout << "applyP" << pVector[i]->m_Position[0] << " " << pVector[i]->m_Position[1] << std::endl;
+    //     std::cout << "applyF" << pVector[i]->m_Force[0] << " " << pVector[i]->m_Force[1] << std::endl;
+    // }
+    apply_constraints(100.f, 10.f);
     //ConstraintSolver::solve(this, 100.0f, 10.0f);
     return computeDerivative();
 }
@@ -203,13 +208,12 @@ unsigned long System::getDim() {
 
 VectorXf System::getState() {
     VectorXf r(this->getDim());
-
     for (int i = 0; i < this->pVector.size(); i++) {
         Particle *p = pVector[i];
         r[i * 4 + 0] = p->m_Position[0];
         r[i * 4 + 1] = p->m_Position[1];
-        r[i * 4 + 2] = p->m_Position[0];
-        r[i * 4 + 3] = p->m_Position[1];
+        r[i * 4 + 2] = p->m_Velocity[0];
+        r[i * 4 + 3] = p->m_Velocity[1];
     }
     return r;
 }
@@ -226,8 +230,8 @@ void System::setState(VectorXf src, float t) {
     for (int i = 0; i < pVector.size(); i++) {
         pVector[i]->m_Position[0] = src[i * 4 + 0];
         pVector[i]->m_Position[1] = src[i * 4 + 1];
-        pVector[i]->m_Position[0] = src[i * 4 + 2];
-        pVector[i]->m_Position[1] = src[i * 4 + 3];
+        pVector[i]->m_Velocity[0] = src[i * 4 + 2];
+        pVector[i]->m_Velocity[1] = src[i * 4 + 3];
     }
     this->time = t;
 }

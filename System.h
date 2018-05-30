@@ -19,8 +19,8 @@ private:
     void apply_constraints(float ks, float kd);
     void calculateDerivative();
     void apply_forces();
-
     float time;
+    
 public:
     System();
     //System(Solver* solver);
@@ -34,7 +34,7 @@ public:
     void addConstraint(Constraint* c);
     void free_data();
     void clear_data();
-
+    void derivative();
 
 
     // ODE interface

@@ -53,17 +53,22 @@ static void init_system(void)
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
 
-	sys->addParticle(new Particle(center + offset, 10.0f));
-	sys->addParticle(new Particle(center + offset + offset, 3.0f));
-	sys->addParticle(new Particle(center + offset + offset + offset, 120.0f));
+	sys->addParticle(new Particle(center + offset, 1.0f));
+	sys->addParticle(new Particle(center + offset + offset, 1.0f));
+	sys->addParticle(new Particle(center + offset + offset + offset, 1.0f));
 
-	sys->addForce(new SpringForce(sys->pVector, 0, 1, dist, 1.0, 1.0));
-	sys->addForce(new SpringForce(sys->pVector, 1, 2, dist, 1.0, 1.0));
-	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 1.0, 1.0));
+	sys->addForce(new SpringForce(sys->pVector, 0, 1, dist, 150.0, 1.5));
+	sys->addForce(new SpringForce(sys->pVector, 1, 2, dist, 150.0, 1.5));
+	sys->addForce(new SpringForce(sys->pVector, 0, 2, dist, 150.0, 1.5));
 	sys->addForce(new GravityForce(sys->pVector, Vec2f(0, -9.81f))); //apply gravity to all particles
 
 	sys->addConstraint(new RodConstraint(sys->pVector[1], sys->pVector[2], dist));
 	sys->addConstraint(new CircularWireConstraint(sys->pVector[0], center, dist));
+
+	// for(int i = 0; i < sys->pVector.size(); i++)
+    // {
+    //     std::cout << sys->pVector[i]->m_Position[0] << " " << sys->pVector[i]->m_Position[1] << std::endl;
+    // }
 }
 
 
@@ -312,13 +317,13 @@ static void mouse_func(int button, int state, int x, int y)
 
 		const Vec2f mousePos(position[0], -position[1]);
 
-		springParticle = new Particle(mousePos, 0.0f);
+		springParticle = new Particle(mousePos, 1.0f);
+	
 		sys->pVector.push_back(springParticle);
 
 		const int positionClosesetPart = sys->getPositionOfParticle(closestParticle);
 		const int positionStringParticle = sys->getPositionOfParticle(springParticle);
-
-		sys->fVector.push_back(new SpringForce(sys->pVector, positionClosesetPart, positionStringParticle, 0.2, 1.0, 1.0));
+		sys->fVector.push_back(new SpringForce(sys->pVector, positionClosesetPart, positionStringParticle, 0.2, 150.0, 1.5));
 	}
 	else if (state == GLUT_UP)
 	{
@@ -351,6 +356,7 @@ static void idle_func(void)
 	if (dsim)
 	{
 		// change the number
+		//std::cout << dt << std::endl;
 		simulation_step(sys, dt, 1);
 	}
 
@@ -358,6 +364,7 @@ static void idle_func(void)
 	{
 		get_from_UI();
 		remap_GUI();
+		sys->clear_data();
 	}
 
 	glutSetWindow(win_id);
@@ -422,7 +429,7 @@ int main(int argc, char **argv)
 	if (argc == 1)
 	{
 		N = 64;
-		dt = 0.1f;
+		dt = 0.0001f;
 		d = 5.f;
 		fprintf(stderr, "Using defaults : N=%d dt=%g d=%g\n",
 				N, dt, d);

@@ -124,9 +124,10 @@ void implicit(System *sys, float h) {
 void applyMidpoint(System *sys, float h) {
 
     VectorXf oldState = sys->getState();
+    
     VectorXf deriv = sys->derivEval();
     VectorXf midPointState = oldState + h * 0.5f * deriv;
-
+    
     sys->setState(midPointState, sys->getTime() + h);
     deriv = sys->derivEval();
     VectorXf newState = oldState + h * deriv;
@@ -169,20 +170,26 @@ void applyRungeKutta(System *sys, float h) {
 
 void simulation_step(System* sys, float dt, int solver)
 {
+    // for(int i = 0; i < sys->pVector.size(); i++)
+    // {
+    //     std::cout << sys->pVector[i]->m_Position[0] << " " << sys->pVector[i]->m_Position[1] << std::endl;
+    // }
+
     //if(solver == 1) 
-    //    applyEuler(sys,dt);
+        applyEuler(sys,dt);
     //else if(solver == 2) 
-    //    applyMidpoint(sys, dt);
+        //applyMidpoint(sys, dt);
     //else if(solver == 3) 
-    //    applyRungeKutta(sys, dt);
+        //applyRungeKutta(sys, dt);
 
     
-	 int ii, size = sys->pVector.size();
+	// int ii, size = sys->pVector.size();
 
-	 for (ii = 0; ii < size; ii++)
-	 {
-	 	sys->pVector[ii]->m_Position += dt * sys->pVector[ii]->m_Velocity;
-	 	sys->pVector[ii]->m_Velocity = DAMP * sys->pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
-	 }
+    
+	//  for (ii = 0; ii < size; ii++)
+	//  {
+	//  	sys->pVector[ii]->m_Position += dt * sys->pVector[ii]->m_Velocity;
+	//  	sys->pVector[ii]->m_Velocity = DAMP * sys->pVector[ii]->m_Velocity + Vec2f(RAND, RAND) * 0.005;
+	//  }
     
 }

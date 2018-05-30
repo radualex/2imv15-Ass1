@@ -175,12 +175,18 @@ void simulation_step(System* sys, float dt, int solver)
     //     std::cout << sys->pVector[i]->m_Position[0] << " " << sys->pVector[i]->m_Position[1] << std::endl;
     // }
 
-    //if(solver == 1) 
-        applyEuler(sys,dt);
-    //else if(solver == 2) 
-        //applyMidpoint(sys, dt);
-    //else if(solver == 3) 
-        //applyRungeKutta(sys, dt);
+    if(solver == 1) 
+    {
+    applyEuler(sys,dt);
+    }
+    else if(solver == 2) 
+    {
+        applyMidpoint(sys, dt);
+    }
+    else if(solver == 3) 
+    {
+        applyRungeKutta(sys, dt);
+    }
 
     
 	// int ii, size = sys->pVector.size();

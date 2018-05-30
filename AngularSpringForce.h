@@ -1,23 +1,21 @@
-/*
-#include "../Particle.h"
+#pragma once
+
+#include "Particle.h"
 #include "Force.h"
 #include "SpringForce.h"
-#include <map>
+#include <GL/glut.h>
 
 class AngularSpringForce : public Force {
 
 public:
-    AngularSpringForce(Particle *p1, Particle * p2, Particle * p3, float dist, float ks, float kd);
-    AngularSpringForce(std::vector<Particle*> particles, float dist, float ks, float kd);
+    AngularSpringForce(std::vector<Particle*> p, int p1, int p2, int p3, double dist, double ks, double kd);
+    //AngularSpringForce(std::vector<Particle*> particles, float dist, float ks, float kd);
 
     void draw() override;
-    //void setTarget(std::vector<Particle*> particles) override;
     void apply() override;
-    //map<int, map<int, float>> jx() override;
-    //MatrixXf jv() override;
 
 private:
-    float const dist;     // rest length
-    float const ks, kd; // spring strength constants
+    double const m_dist;     // rest length
+    double const m_ks, m_kd; // spring strength constants
+    int const m_p1, m_p2, m_p3;
 };
-*/

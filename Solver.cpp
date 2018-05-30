@@ -20,6 +20,10 @@ void applyEuler(ParticleManipulator *pm, float dt) {
     VectorXf deriv = pm->derivEval();
     VectorXf newState = oldState + dt * deriv;
 
+    if(pm->walls)
+    {
+        newState = pm->fixCollisions(newState);
+    }
     pm->setState(newState);
 }
 
@@ -33,6 +37,10 @@ void applyMidpoint(ParticleManipulator *pm, float dt) {
     pm->setState(midPointState);
     deriv = pm->derivEval();
     VectorXf newState = oldState + dt * deriv;
+    if(pm->walls)
+    {
+        newState = pm->fixCollisions(newState);
+    }
 
     pm->setState(newState);
 }
@@ -60,6 +68,10 @@ void applyRungeKutta(ParticleManipulator *pm, float dt) {
     
     newState = oldState + 1.0f / 6.0f * k1 + 1.0f / 3.0f * k2 + 1.0f / 3.0f * k3 + 1.0f / 6.0f * k4;
 
+    if(pm->walls)
+    {
+        newState = pm->fixCollisions(newState);
+    }
     pm->setState(newState);
 }
 

@@ -1,6 +1,7 @@
 #include "ParticleManipulator.h"
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
+#include <GL/glut.h>
 
 ParticleManipulator::ParticleManipulator() {}
 
@@ -192,4 +193,35 @@ void ParticleManipulator::setState(VectorXf newState) {
         pVector[i]->m_Velocity[0] = newState[i * 4 + 2];
         pVector[i]->m_Velocity[1] = newState[i * 4 + 3];
     }
+}
+
+VectorXf ParticleManipulator::fixCollisions(VectorXf newState) {
+    //collision from side
+    for (int i = 0; i < pVector.size(); i++) {
+        if (newState[i * 4] > 0.05f) {
+			//std::cout<<"collision "<<newState[i*4]<<std::endl;
+            newState[i * 4] = 0.05f;
+        }
+    }
+    //Check collision with floor
+    for (int i = 0; i < pVector.size(); i++) {
+        if(newState[i * 4 + 1]<-0.1f){
+			//std::cout<<"collision "<<newState[i*4 + 1]<<std::endl;
+            newState[i * 4 + 1]=-0.1f;
+        }
+    }
+
+    return newState;
+}
+
+void ParticleManipulator::drawWalls()
+{
+glLineWidth(2.5);
+glColor3f(1.0, 0.0, 0.0);
+glBegin(GL_LINES);
+glVertex2f(0.0, -0.1);
+glVertex2f(-20, -0.1);
+glVertex2f(0.05, 0.0);
+glVertex2f(0.05, 20);
+glEnd(); 
 }

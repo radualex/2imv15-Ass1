@@ -24,6 +24,7 @@ public:
     std::vector<Particle*> pVector;
     std::vector<Force*> fVector;
     std::vector<Constraint*> cVector;
+    bool walls = false;
 
     void addParticle(Particle* p);
     void addForce(Force* f);
@@ -32,6 +33,8 @@ public:
     void free_data();
     void clear_data();
     void derivative();
+    VectorXf fixCollisions(VectorXf newState);
+    void drawWalls();
 
     // ODE interface
     unsigned long getDim();

@@ -69,7 +69,7 @@ static void init_basic(void)
 
 	// Create three particles, attach them to each other, then add a
 	// circular wire constraint to the first.
-
+	//pm->drawWall();
 	pm->pVector.push_back(new Particle(center + offset, 0.05f));
 	pm->pVector.push_back(new Particle(center + offset + offset, 0.05f));
 	pm->pVector.push_back(new Particle(center + offset + offset + offset, 0.05f));
@@ -271,7 +271,6 @@ static void key_func(unsigned char key, int x, int y)
 	case 'A':
 		//basic
 		init_basic();
-		//open_glut_window();
 
 		glutMainLoop();
 
@@ -281,7 +280,6 @@ static void key_func(unsigned char key, int x, int y)
 	case 'S':
 		//cloth
 		init_cloth();
-		//open_glut_window();
 
 		glutMainLoop();
 
@@ -291,13 +289,20 @@ static void key_func(unsigned char key, int x, int y)
 	case 'W':
 		//angular spring
 		init_angular();
-		//open_glut_window();
 
 		glutMainLoop();
 
 		exit(0);
 		break;
-	
+	case 'z':
+	case 'Z':
+	if(!pm->walls){
+		pm->walls = true;
+	}
+	else
+		pm->walls = false;
+		break;
+
 	case '1':
 		solverNr = 1;
 		std::cout<< "using explicit eulear"<<std::endl;
@@ -444,7 +449,7 @@ static void display_func(void)
 	draw_forces();
 	draw_constraints();
 	draw_particles();
-
+	pm->drawWalls();
 	post_display();
 	// std::cout << pVector[0]->m_Position[0] << pVector[0]->m_Position[1] << "|";
 }
@@ -514,6 +519,7 @@ int main(int argc, char **argv)
 	printf("\t Press 'a' to show Default example\n");
 	printf("\t Press 's' to show Cloth example\n");
 	printf("\t Press 'w' to show Angular springs example\n");
+	printf("\t Press 'z' to toggle between resolving collision and not. USe for cloth")
 	printf("\t Press '1' to apply Explicit Euler(Default)\n");
 	printf("\t Press '2' to apply Mid-point\n");
 	printf("\t Press '3' to apply Runge-kutta\n");
